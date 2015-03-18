@@ -11,16 +11,16 @@
 		public $redirect_uri	= '';
 		public $access_token	= '';
 		public $refresh_token	= '';
-		public $authorize_url 	= 'https://www.box.com/api/oauth2/authorize';
-		public $token_url	 	= 'https://www.box.com/api/oauth2/token';
-		public $api_url 		= 'https://api.box.com/2.0';
-		public $upload_url 		= 'https://upload.box.com/api/2.0';
+		public $authorize_url	= 'https://www.box.com/api/oauth2/authorize';
+		public $token_url	= 'https://www.box.com/api/oauth2/token';
+		public $api_url	= 'https://api.box.com/2.0';
+		public $upload_url	= 'https://upload.box.com/api/2.0';
 
 		public function __construct($client_id = '', $client_secret = '', $redirect_uri = '') {
 			if(empty($client_id) || empty($client_secret)) {
 				throw ('Invalid CLIENT_ID or CLIENT_SECRET or REDIRECT_URL. Please provide CLIENT_ID, CLIENT_SECRET and REDIRECT_URL when creating an instance of the class.');
 			} else {
-				$this->client_id 		= $client_id;
+				$this->client_id	= $client_id;
 				$this->client_secret	= $client_secret;
 				$this->redirect_uri		= $redirect_uri;
 			}
@@ -171,6 +171,11 @@
 			} else {
 				return json_decode($this->get($url),true);
 			}
+		}
+
+		public function get_file_content($file) {
+		  $url = $this->build_url("/files/$file/content");
+		  return $this->download($url);
 		}
 		
 		/* Uploads a file */
@@ -332,6 +337,25 @@
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
 			$data = curl_exec($ch);
 			curl_close($ch);
+			return $data;
+		}
+		
+		private static function download($url) {
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($ch, CURLOPT_HEADER, true);
+			$data = curl_exec($ch);
+			curl_close($ch);
+
+			$headers = explode("\r\n", $data);
+			foreach ($headers as $header) {
+				$matches = [];
+				if (preg_match('/^Location:\s+(.*)/i', $header, $matches)) {
+					return self::get($matches[1]);
+				}
+			}
 			return $data;
 		}
 	}
