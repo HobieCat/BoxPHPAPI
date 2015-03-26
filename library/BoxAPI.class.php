@@ -213,7 +213,7 @@
 			} else {
 				$array['timestamp'] = time();
 				if($type == 'file'){
-					$fp = fopen('token.box', 'w');
+					$fp = fopen($this->get_store_token_file_path(), 'w');
 					fwrite($fp, json_encode($array));
 					fclose($fp);
 				}
@@ -223,9 +223,10 @@
 		
 		/* Reads the token */
 		public function read_token($type = 'file', $json = false) {
-			if($type == 'file' && file_exists('token.box')){
-				$fp = fopen('token.box', 'r');
-				$content = fread($fp, filesize('token.box'));
+            $store_token_file_name = $this->get_store_token_file_path();
+            if($type == 'file' && file_exists($store_token_file_name)){
+                $fp = fopen($store_token_file_name, 'r');
+				$content = fread($fp, filesize($store_token_file_name));
 				fclose($fp);
 			} else {
 				return false;
@@ -360,4 +361,8 @@
 			}
 			return $data;
 		}
+
+        private function get_store_token_file_path() {
+            return sys_get_temp_dir() . "/token.box";
+        }
 	}
