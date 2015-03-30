@@ -163,6 +163,17 @@
 			return json_decode($this->put($url, $params), true);
 		}
 
+        /* Get a file */
+        public function get_file($file) {
+            $url = $this->build_url("/files/$file/content");
+
+            return $this->getViewer($url);
+
+            //return json_decode($this->put($url, $params), true);
+        }
+
+
+
 		/* Get the details of the mentioned file */
 		public function get_file_details($file, $json = false) {
 			$url = $this->build_url("/files/$file");
@@ -206,7 +217,7 @@
 			} else {
 				$array['timestamp'] = time();
 				if($type == 'file'){
-					$fp = fopen('token.box', 'w');
+					$fp = fopen('/tmp/token.box', 'w');
 					fwrite($fp, json_encode($array));
 					fclose($fp);
 				}
@@ -216,9 +227,9 @@
 		
 		/* Reads the token */
 		public function read_token($type = 'file', $json = false) {
-			if($type == 'file' && file_exists('token.box')){
-				$fp = fopen('token.box', 'r');
-				$content = fread($fp, filesize('token.box'));
+			if($type == 'file' && file_exists('/tmp/token.box')){
+				$fp = fopen('/tmp/token.box', 'r');
+				$content = fread($fp, filesize('/tmp/token.box'));
 				fclose($fp);
 			} else {
 				return false;
@@ -298,6 +309,18 @@
 			curl_close($ch);
 			return $data;
 		}
+        private static function getViewer($url) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_HEADER, TRUE);
+            $data = http_parse_headers(curl_exec($ch))['Location'];
+
+            curl_close($ch);
+            return $data;
+        }
+
 		
 		private static function post($url, $params) {
 			$ch = curl_init();
