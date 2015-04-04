@@ -27,14 +27,21 @@
 		}
 		
 		/* First step for authentication [Gets the code] */
-		public function get_code() {
+		public function get_code($readyKey = false) {
 			if(array_key_exists('refresh_token', $_REQUEST)) {
 				$this->refresh_token = $_REQUEST['refresh_token'];
 			} else {
 				// echo $url = $this->authorize_url . '?' . http_build_query(array('response_type' => 'code', 'client_id' => $this->client_id, 'redirect_uri' => $this->redirect_uri));
-				$url = $this->authorize_url . '?' . http_build_query(array('response_type' => 'code', 'client_id' => $this->client_id, 'redirect_uri' => $this->redirect_uri));
-				header('location: ' . $url);
-				exit();
+                if(!$readyKey)
+                {
+                    echo "Box needs to be authenticated <a href='/Administrative/API/box.php'>Click Here to auth</a>";
+                    //exit();
+                }else{
+                    $url = $this->authorize_url . '?' . http_build_query(array('response_type' => 'code', 'client_id' => $this->client_id, 'redirect_uri' => $this->redirect_uri));
+                    header('location: ' . $url);
+                    exit();
+                }
+
 			}
 		}
 		
