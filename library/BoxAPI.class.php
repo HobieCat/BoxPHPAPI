@@ -75,7 +75,22 @@
 				return json_decode($this->get($url),true);
 			}
 		}
-		
+
+
+        public function get_folder_items_pool($arrFolder, $json = false) {
+            $arrUrl = array();
+            foreach ($arrFolder as $box)
+            {
+                array_push($arrUrl, array("boxID" => $box['boxID'], "url" => $this->build_url("/folders/".$box['boxID']."/items")));
+            }
+            //$url = $this->build_url("/folders/$folder/items");
+            if($json){
+                return $this->get_pool($arrUrl);
+            } else {
+                return json_decode($this->get_pool($arrUrl),true);
+            }
+        }
+
 		/* Get the list of items in the mentioned folder */
 		public function get_folder_items($folder, $json = false) {
 			$url = $this->build_url("/folders/$folder/items");
@@ -316,6 +331,37 @@
 			curl_close($ch);
 			return $data;
 		}
+        
+        private static function get_pool($arrData) {
+            $mh = curl_multi_init();
+            $curly = array();
+            $results = array();
+            foreach ($arrData as $id => $d) {
+                $curly[$id]= curl_init();
+
+                $url = (is_array($d) && !empty($d['url'])) ? $d['url'] : $d;
+                curl_setopt($curly[$id], CURLOPT_URL, $url);
+                curl_setopt($curly[$id], CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($curly[$id], CURLOPT_SSL_VERIFYPEER, false);
+                curl_multi_add_handle($mh, $curly[$id]);
+            }
+
+            $running = null;
+            do {
+                curl_multi_exec($mh, $running);
+            } while($running > 0);
+
+
+            foreach($curly as $id => $c) {
+                $results[$id]['boxID'] = $arrData[$id]['boxID'];
+                $results[$id]['json'] = curl_multi_getcontent($c);
+                curl_multi_remove_handle($mh, $c);
+            }
+
+            //$data = curl_exec($ch);
+            curl_multi_close($mh);
+            return $results;
+        }
         private static function getViewer($url) {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
