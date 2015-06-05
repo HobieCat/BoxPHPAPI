@@ -239,7 +239,7 @@
 			} else {
 				$array['timestamp'] = time();
 				if($type == 'file'){
-					$fp = fopen('/tmp/token.box', 'w');
+					$fp = fopen($_SERVER['BOX_TOKEN'], 'w');
 					fwrite($fp, json_encode($array));
 					fclose($fp);
 				}
@@ -249,9 +249,9 @@
 		
 		/* Reads the token */
 		public function read_token($type = 'file', $json = false) {
-			if($type == 'file' && file_exists('/tmp/token.box')){
-				$fp = fopen('/tmp/token.box', 'r');
-				$content = fread($fp, filesize('/tmp/token.box'));
+			if($type == 'file' && file_exists($_SERVER['BOX_TOKEN'])){
+				$fp = fopen($_SERVER['BOX_TOKEN'], 'r');
+				$content = fread($fp, filesize($_SERVER['BOX_TOKEN']));
 				fclose($fp);
 			} else {
 				return false;
