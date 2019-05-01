@@ -1,3 +1,6 @@
+### 1.0.8: may 01th, 2019
+* Updated the code for PHP 7
+
 ### 1.0.7: Aug 06th, 2015
 * Upload file function put_file updated as per the changes
 

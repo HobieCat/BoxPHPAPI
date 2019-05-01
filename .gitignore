@@ -68,14 +68,12 @@ build/
 *.tlb
 *.tli
 *.tlh
-*.tmp
 *.tmp_proj
 *.log
 *.vspscc
 *.vssscc
 .builds
 *.pidb
-*.log
 *.scc
 
 # Visual C++ cache files
@@ -129,8 +127,7 @@ publish/
 *.pubxml
 
 # NuGet Packages Directory
-## TODO: If you have NuGet Package Restore enabled, uncomment the next line
-#packages/
+packages/
 
 # Windows Azure Build Output
 csx
@@ -193,7 +190,6 @@ $RECYCLE.BIN/
 *.egg
 *.egg-info
 dist/
-build/
 eggs/
 parts/
 var/
@@ -214,9 +210,15 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 
+#################
+## PhpStorm
+#################
+.idea/
 
 #############
 ## Repo files
 #############
 box.php
 token.box
+
+vendor/
