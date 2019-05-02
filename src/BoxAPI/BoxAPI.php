@@ -22,7 +22,7 @@
  * * Share file
  */
 
-namespace PHPBoxAPI;
+namespace Xlthlx\PHPBoxAPI\API\BoxAPI;
 
 class BoxAPI {
 

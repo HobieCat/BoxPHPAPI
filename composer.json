@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "PHPBoxAPI\\": "src/"
+            "Xlthlx\\PHPBoxAPI\\API\\": "src/"
         }
     }
 }
