@@ -20,6 +20,14 @@ Forked from [golchha21/BoxPHPAPI](https://github.com/golchha21/BoxPHPAPI)
 	* Update file details
 	* Delete file
 	* Share file
+	
+## Install
+
+Via Composer
+
+``` bash
+$ composer require xlthlx/phpboxapi
+```
 
 ## Changelog
 You can see the changelog <a href="CHANGELOG.md">here</a>.
