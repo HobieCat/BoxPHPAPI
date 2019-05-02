@@ -1,6 +1,6 @@
 {
     "name": "xlthlx/phpboxapi",
-    "license": "Apache License 2.0",
+    "license": "Apache-2.0",
     "type": "library",
     "description": "PHP API library for box.com",
     "authors": [
