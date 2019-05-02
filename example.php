@@ -5,7 +5,6 @@ $client_id     = 'CLIENT ID';
 $client_secret = 'CLIENT SECRET';
 $redirect_uri  = 'REDIRECT URL';
 
-
 $box = new BoxAPI\Box_API( $client_id, $client_secret, $redirect_uri );
 
 if ( ! $box->load_token() ) {
