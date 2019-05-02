@@ -20,12 +20,12 @@
     },
     "autoload": {
         "psr-4": {
-            "BoxAPI": "src/"
+            "BoxAPI\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "BoxAPI": "src/"
+            "BoxAPI\\": "src/"
         }
-    }
+    },
 }
