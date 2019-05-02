@@ -5,7 +5,7 @@ PHP API library for box.com.
 Forked from [golchha21/BoxPHPAPI](https://github.com/golchha21/BoxPHPAPI)
 
 ## Features
-* Fetches the user details.
+* Fetches the user details
 * Folder:
 	* List the items
 	* List the collaborators
