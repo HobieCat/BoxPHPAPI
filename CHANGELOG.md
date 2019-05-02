@@ -1,3 +1,6 @@
+### 2.0.0: may 02th, 2019
+* Bugfixing
+
 ### 1.0.9: may 02th, 2019
 * Added to composer
 
