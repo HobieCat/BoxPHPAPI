@@ -22,9 +22,9 @@
  * * Share file
  */
 
-namespace BoxAPI;
+namespace PHPBoxAPI;
 
-class Box_API {
+class BoxAPI {
 
 	public $client_id = '';
 	public $client_secret = '';
