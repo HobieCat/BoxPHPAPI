@@ -1,8 +1,8 @@
 {
     "name": "xlthlx/phpboxapi",
-    "license": "Apache-2.0",
-    "type": "library",
     "description": "PHP API library for box.com",
+    "type": "Library",
+    "license": "Apache-2.0",
     "authors": [
         {
             "name": "xlthlx",
@@ -17,11 +17,5 @@
         "psr-4": {
             "BoxAPI\\": "src/"
         }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "BoxAPI\\": "src/"
-        }
     }
 }
-
