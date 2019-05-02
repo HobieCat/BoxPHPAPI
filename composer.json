@@ -1,24 +1,26 @@
 {
-  "name": "golchha21/boxphpapi",
-  "type": "library",
-  "description": "Unofficial BoxPHPAPI v2",
-  "keywords": [
-    "Box",
-    "BoxAPI",
-    "PHP",
-    "API"
-  ],
-  "homepage": "http://www.ulhas.net/GitHub/BoxPHPAPI/",
-  "license": "Apache License 2.0",
-  "authors": [
-    {
-      "name": "Ulhas Vardhan Golchha",
-      "homepage": "http://www.ulhas.net/",
-      "role": "Developer"
+    "name": "xlthlx/phpboxapi",
+    "license": "Apache License 2.0",
+    "type": "library",
+    "description": "PHP API library for box.com",
+    "authors": [
+        {
+            "name": "xlthlx",
+            "email": "xlthlx@gmail.com"
+        },
+        {
+            "name": "Ulhas Vardhan Golchha",
+            "homepage": "http://www.ulhas.net/",
+            "role": "Original developer"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "BoxAPI": "src/"
+        }
     }
-  ],
-  "support": {
-    "issues": "https://github.com/golchha21/BoxPHPAPI/issues",
-    "source": "https://github.com/golchha21/BoxPHPAPI"
-  }
 }

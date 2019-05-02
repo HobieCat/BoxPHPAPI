@@ -1,7 +1,7 @@
 <?php
 /**
  * Class Box_API
- * Unofficial Box.com PHP API v2 class based on the API documentations.
+ * PHP API library for box.com.
  *
  * Features:
  *
@@ -21,6 +21,8 @@
  * * Delete file
  * * Share file
  */
+
+namespace BoxAPI;
 
 class Box_API {
 
