@@ -1,4 +1,5 @@
-	Copyright 2013 - 2015 Ulhas Vardhan Golchha
+	Copyright 2013 - 2019
+    Ulhas Vardhan Golchha, Mathieu Figiel, Kiyoto Suzuki, Luke Dubber, Serena Piccioni, Florian Greinus, Giorgio Consorti
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
