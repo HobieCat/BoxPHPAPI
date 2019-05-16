@@ -1,6 +1,6 @@
 <?php
 
-use Xlthlx\PHPBoxAPI\API\BoxAPI\BoxAPI;
+use HobieCat\PHPBoxAPI\BoxAPI;
 
 include( 'src/BoxAPI/BoxAPI.php' );
 
@@ -8,72 +8,72 @@ $client_id     = 'CLIENT ID';
 $client_secret = 'CLIENT SECRET';
 $redirect_uri  = 'REDIRECT URL';
 
-$box = new Xlthlx\PHPBoxAPI\API\BoxAPI\BoxAPI( $client_id, $client_secret, $redirect_uri );
+$box = new HobieCat\PHPBoxAPI\BoxAPI( $client_id, $client_secret, $redirect_uri );
 
-if ( ! $box->load_token() ) {
+if ( ! $box->loadToken() ) {
 	if ( isset( $_GET['code'] ) ) {
-		$token = $box->get_token( $_GET['code'], true );
-		if ( $box->write_token( $token, 'file' ) ) {
-			$box->load_token();
+		$token = $box->getToken( $_GET['code'], true );
+		if ( $box->writeToken( $token, 'file' ) ) {
+			$box->loadToken();
 		}
 	} else {
-		$box->get_code();
+		$box->getCode();
 	}
 }
 
 // User details
-$box->get_user();
+$box->getUser();
 
 // Get folder details
-$box->get_folder_details( 'FOLDER ID' );
+$box->getFolderDetails( 'FOLDER ID' );
 
 // Get folder items list
-$box->get_folder_items( 'FOLDER ID' );
+$box->getFolderItems( 'FOLDER ID' );
 
 // All folders in particular folder
-$box->get_folders( 'FOLDER ID' );
+$box->getFolders( 'FOLDER ID' );
 
 // All Files in a particular folder
-$box->get_files( 'FOLDER ID' );
+$box->getFiles( 'FOLDER ID' );
 
 // All Web links in a particular folder
-$box->get_links( 'FOLDER ID' );
+$box->getLinks( 'FOLDER ID' );
 
 // Get folder collaborators list
-$box->get_folder_collaborators( 'FOLDER ID' );
+$box->getFolderCollaborators( 'FOLDER ID' );
 
 // Create folder
-$box->create_folder( 'FOLDER NAME', 'PARENT FOLDER ID' );
+$box->createFolder( 'FOLDER NAME', 'PARENT FOLDER ID' );
 
 // Update folder details
 $details['name'] = 'NEW FOLDER NAME';
-$box->update_folder( 'FOLDER ID', $details );
+$box->updateFolder( 'FOLDER ID', $details );
 
 // Share folder
 $params['shared_link']['access'] = 'ACCESS TYPE'; //open|company|collaborators
-print_r( $box->share_folder( 'FOLDER ID', $params ) );
+print_r( $box->shareFolder( 'FOLDER ID', $params ) );
 
 // Delete folder
 $opts['recursive'] = 'true';
-$box->delete_folder( 'FOLDER ID', $opts );
+$box->deleteFolder( 'FOLDER ID', $opts );
 
 // Get file details
-$box->get_file_details( 'FILE ID' );
+$box->getFileDetails( 'FILE ID' );
 
 // Upload file
-$box->put_file( 'RELATIVE FILE URL', 'FILE NAME', 'FOLDER ID' );
+$box->putFile( 'RELATIVE FILE URL', 'FILE NAME', 'FOLDER ID' );
 
 // Update file details
 $details['name']        = 'NEW FILE NAME';
 $details['description'] = 'NEW DESCRIPTION FOR THE FILE';
-$box->update_file( 'FILE ID', $details );
+$box->updateFile( 'FILE ID', $details );
 
 // Share file
 $params['shared_link']['access'] = 'ACCESS TYPE'; //open|company|collaborators
-print_r( $box->share_file( 'File ID', $params ) );
+print_r( $box->shareFile( 'File ID', $params ) );
 
 // Delete file
-$box->delete_file( 'FILE ID' );
+$box->deleteFile( 'FILE ID' );
 
 if ( isset( $box->error ) ) {
 	echo $box->error . "\n";
