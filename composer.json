@@ -1,5 +1,5 @@
 {
-    "name": "HobieCat/BoxPHPAPI",
+    "name": "hobiecat/boxphpapi",
     "type": "Library",
     "description": "PHP API library for box.com",
     "keywords": ["Box","BoxAPI","PHP","API"],

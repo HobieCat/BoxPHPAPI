@@ -37,7 +37,7 @@ Merged contributions from:
 Via Composer
 
 ``` bash
-$ composer require hobiecat/phpboxapi
+$ composer require hobiecat/boxphpapi
 ```
 
 ## Changelog
