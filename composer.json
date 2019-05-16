@@ -1,7 +1,7 @@
 {
-    "name": "golchha21/boxphpapi",
+    "name": "kiyoto-suzuki/boxphpapi",
     "type": "API",
-    "description": "Unofficial BoxPHPAPI v2",
+    "description": "Unofficial BoxPHPAPI v2 modified",
     "keywords": ["Box","BoxAPI","PHP","API"],
     "homepage": "http://www.ulhas.net/GitHub/BoxPHPAPI/",
     "license": "Apache License 2.0",
@@ -10,10 +10,14 @@
             "name": "Ulhas Vardhan Golchha",
             "homepage": "http://www.ulhas.net/",
             "role": "Developer"
+        },
+        {
+            "name": "Kiyoto Suzuki",
+            "role": "Developer"
         }
     ],
     "support": {
-        "issues": "https://github.com/golchha21/BoxPHPAPI/issues",
-        "source": "https://github.com/golchha21/BoxPHPAPI"
+        "issues": "https://github.com/kiyoto-suzuki/BoxPHPAPI/issues",
+        "source": "https://github.com/kiyoto-suzuki/BoxPHPAPI"
     }
 }

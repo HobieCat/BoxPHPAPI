@@ -1,8 +1,10 @@
 <?php 
+/*
 	define( '_CODENAME', 'BoxPHPAPI'); 
 	define( '_VERSION', '1.1'); 
 	define( '_URL', 'https://github.com/misterfifi1');
 	error_reporting(E_ERROR);
+*/
 	
 	class Box_API {
 		
@@ -22,7 +24,7 @@
 			if(empty($client_id) || empty($client_secret)) {
 				throw ('Invalid CLIENT_ID or CLIENT_SECRET or REDIRECT_URL. Please provide CLIENT_ID, CLIENT_SECRET and REDIRECT_URL when creating an instance of the class.');
 			} else {
-				$this->client_id 		= $client_id;
+				$this->client_id	= $client_id;
 				$this->client_secret	= $client_secret;
 				$this->redirect_uri		= $redirect_uri;
 			}
@@ -281,6 +283,11 @@
 				return json_decode($this->get($url),true);
 			}
 		}
+
+		public function get_file_content($file) {
+		  $url = $this->build_url("/files/$file/content");
+		  return $this->download($url);
+		}
 		
 		/* Uploads a file */
 		public function put_file($file, $name, $parent_id) {
@@ -316,7 +323,7 @@
 			} else {
 				$array['timestamp'] = time();
 				if($type == 'file'){
-					$fp = fopen('token.box', 'w');
+					$fp = fopen($this->get_store_token_file_path(), 'w');
 					fwrite($fp, json_encode($array));
 					fclose($fp);
 				}
@@ -326,9 +333,10 @@
 		
 		/* Reads the token */
 		public function read_token($type = 'file', $json = false) {
-			if($type == 'file' && file_exists('token.box')){
-				$fp = fopen('token.box', 'r');
-				$content = fread($fp, filesize('token.box'));
+            $store_token_file_name = $this->get_store_token_file_path();
+            if($type == 'file' && file_exists($store_token_file_name)){
+                $fp = fopen($store_token_file_name, 'r');
+				$content = fread($fp, filesize($store_token_file_name));
 				fclose($fp);
 			} else {
 				return false;
@@ -470,4 +478,27 @@
 			curl_close($ch);
 			return $data;
 		}
+		
+		private static function download($url) {
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($ch, CURLOPT_HEADER, true);
+			$data = curl_exec($ch);
+			curl_close($ch);
+
+			$headers = explode("\r\n", $data);
+			foreach ($headers as $header) {
+				$matches = [];
+				if (preg_match('/^Location:\s+(.*)/i', $header, $matches)) {
+					return self::get($matches[1]);
+				}
+			}
+			return $data;
+		}
+
+        private function get_store_token_file_path() {
+            return sys_get_temp_dir() . "/token.box";
+        }
 	}
