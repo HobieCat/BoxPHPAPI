@@ -26,22 +26,23 @@ namespace Xlthlx\PHPBoxAPI\API\BoxAPI;
 
 class BoxAPI {
 
-	public $client_id 		= '';
-	public $client_secret 	= '';
-	public $redirect_uri	= '';
-	public $access_token	= '';
-	public $refresh_token	= '';
-	public $authorize_url 	= 'https://www.box.com/api/oauth2/authorize';
-	public $token_url	 	= 'https://www.box.com/api/oauth2/token';
-	public $api_url 		= 'https://api.box.com/2.0';
-	public $upload_url 		= 'https://upload.box.com/api/2.0';
-	public $asUser			= '';
-	public $error_message   = '';
-	public $reponse_status  = '';
+	public $clientId 		 = '';
+	public $clientSecret 	 = '';
+	public $redirectUri	     = '';
+	public $accessToken	     = '';
+	public $refreshToken	 = '';
+	public $authorizeUrl 	 = 'https://www.box.com/api/oauth2/authorize';
+	public $tokenUrl	 	 = 'https://www.box.com/api/oauth2/token';
+	public $apiUrl 		     = 'https://api.box.com/2.0';
+	public $uploadUrl 		 = 'https://upload.box.com/api/2.0';
+	public $asUser			 = '';
+	public $errorMessage     = '';
+	public $reponseStatus    = '';
+	public $tokenStoragePath = './';
 	public $error;
 
 	/**
-	 * Box_API constructor.
+	 * BoxAPI constructor.
 	 *
 	 * @param string $client_id
 	 * @param string $client_secret
@@ -49,11 +50,11 @@ class BoxAPI {
 	 */
 	public function __construct( $client_id = '', $client_secret = '', $redirect_uri = '' ) {
 		if ( empty( $client_id ) || empty( $client_secret ) ) {
-			die ( 'Invalid CLIENT_ID or CLIENT_SECRET or REDIRECT_URL. Please provide CLIENT_ID, CLIENT_SECRET and REDIRECT_URL when creating an instance of the class.' );
+			throw new \Exception ( 'Invalid CLIENT_ID or CLIENT_SECRET or REDIRECT_URL. Please provide CLIENT_ID, CLIENT_SECRET and REDIRECT_URL when creating an instance of the class.' );
 		} else {
-			$this->client_id     = $client_id;
-			$this->client_secret = $client_secret;
-			$this->redirect_uri  = $redirect_uri;
+			$this->clientId     = $client_id;
+			$this->clientSecret = $client_secret;
+			$this->redirectUri  = $redirect_uri;
 		}
 	}
 
@@ -63,52 +64,52 @@ class BoxAPI {
 	 * @param string $userID
 	 * @return self
 	 */
-	public function setAsUser($userID){
+	public function setAsUser( $userID ) {
 		$this->asUser = $userID;
+
 		return $this;
 	}
 
 	/**
 	 * First step for authentication: gets the code.
 	 */
-	public function get_code() {
+	public function getCode() {
 		if ( array_key_exists( 'refresh_token', $_REQUEST ) ) {
-			$this->refresh_token = $_REQUEST['refresh_token'];
+			$this->refreshToken = $_REQUEST['refresh_token'];
 		} else {
-			$url = $this->authorize_url . '?' . http_build_query( [
+			$url = $this->authorizeUrl . '?' . http_build_query( [
 					'response_type' => 'code',
-					'client_id'     => $this->client_id,
-					'redirect_uri'  => $this->redirect_uri
+					'client_id'     => $this->clientId,
+					'redirect_uri'  => $this->redirectUri
 				] );
 			header( 'location: ' . $url );
 			exit();
 		}
 	}
 
-
 	/**
-	 * Second step for authentication: gets the access_token and the refresh_token.
+	 * Second step for authentication: gets the accessToken and the refreshToken.
 	 *
 	 * @param string $code
 	 * @param bool $json
 	 *
 	 * @return array|bool|mixed|object|string
 	 */
-	public function get_token( $code = '', $json = false ) {
-		$url = $this->token_url;
-		if ( ! empty( $this->refresh_token ) ) {
+	public function getToken( $code = '', $json = false ) {
+		$url = $this->tokenUrl;
+		if ( ! empty( $this->refreshToken ) ) {
 			$params = [
 				'grant_type'    => 'refresh_token',
-				'refresh_token' => $this->refresh_token,
-				'client_id'     => $this->client_id,
-				'client_secret' => $this->client_secret
+				'refresh_token' => $this->refreshToken,
+				'client_id'     => $this->clientId,
+				'client_secret' => $this->clientSecret
 			];
 		} else {
 			$params = [
 				'grant_type'    => 'authorization_code',
 				'code'          => $code,
-				'client_id'     => $this->client_id,
-				'client_secret' => $this->client_secret
+				'client_id'     => $this->clientId,
+				'client_secret' => $this->clientSecret
 			];
 		}
 		if ( $json ) {
@@ -118,18 +119,16 @@ class BoxAPI {
 		}
 	}
 
-
 	/**
 	 * Gets the current user details.
 	 *
 	 * @return array|mixed|object
 	 */
-	public function get_user() {
-		$url = $this->build_url( '/users/me' );
+	public function getUser() {
+		$url = $this->buildUrl( '/users/me' );
 
 		return json_decode( $this->get( $url ), true );
 	}
-
 
 	/**
 	 * Gets the details of a folder.
@@ -139,15 +138,14 @@ class BoxAPI {
 	 *
 	 * @return array|bool|mixed|object|string
 	 */
-	public function get_folder_details( $folder, $json = false ) {
-		$url = $this->build_url( "/folders/$folder" );
+	public function getFolderDetails( $folder, $json = false ) {
+		$url = $this->buildUrl( "/folders/$folder" );
 		if ( $json ) {
 			return $this->get( $url );
 		} else {
 			return json_decode( $this->get( $url ), true );
 		}
 	}
-
 
 	/**
 	 * Gets the list of items in a folder.
@@ -157,15 +155,14 @@ class BoxAPI {
 	 *
 	 * @return array|bool|mixed|object|string
 	 */
-	public function get_folder_items( $folder, $json = false ) {
-		$url = $this->build_url( "/folders/$folder/items" );
+	public function getFolderItems( $folder, $json = false ) {
+		$url = $this->buildUrl( "/folders/$folder/items" );
 		if ( $json ) {
 			return $this->get( $url );
 		} else {
 			return json_decode( $this->get( $url ), true );
 		}
 	}
-
 
 	/**
 	 * Gets the list of collaborators in a folder.
@@ -175,8 +172,8 @@ class BoxAPI {
 	 *
 	 * @return array|bool|mixed|object|string
 	 */
-	public function get_folder_collaborators( $folder, $json = false ) {
-		$url = $this->build_url( "/folders/$folder/collaborations" );
+	public function getFolderCollaborators( $folder, $json = false ) {
+		$url = $this->buildUrl( "/folders/$folder/collaborations" );
 		if ( $json ) {
 			return $this->get( $url );
 		} else {
@@ -184,6 +181,29 @@ class BoxAPI {
 		}
 	}
 
+	/**
+	 * Get shared items.
+	 *
+	 * @param stirng $link
+	 *
+	 * @return array
+	 */
+	public function getSharedItems( $link ) {
+        $url = $this->buildUrl( '/shared_items' );
+
+        $ch = curl_init();
+        curl_setopt( $ch, CURLOPT_URL, $url);
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, [ "BoxApi: shared_link=".$link ] );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+        curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
+        curl_setopt( $ch, CURLOPT_MAXREDIRS, 3 );
+
+        $data = curl_exec( $ch );
+        curl_close( $ch );
+
+        return json_decode ($data );
+    }
 
 	/**
 	 * Lists the folders in a folder.
@@ -192,9 +212,9 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function get_folders( $folder ) {
+	public function getFolders( $folder ) {
 		$return = [];
-		$data   = $this->get_folder_items( $folder );
+		$data   = $this->getFolderItems( $folder );
 		foreach ( $data['entries'] as $item ) {
 			$array = '';
 			if ( $item['type'] == 'folder' ) {
@@ -206,7 +226,6 @@ class BoxAPI {
 		return array_filter( $return );
 	}
 
-
 	/**
 	 * Lists the files in a folder.
 	 *
@@ -214,9 +233,9 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function get_files( $folder ) {
+	public function getFiles( $folder ) {
 		$return = [];
-		$data   = $this->get_folder_items( $folder );
+		$data   = $this->getFolderItems( $folder );
 		foreach ( $data['entries'] as $item ) {
 			$array = '';
 			if ( $item['type'] == 'file' ) {
@@ -228,7 +247,6 @@ class BoxAPI {
 		return array_filter( $return );
 	}
 
-
 	/**
 	 * Lists the files in a folder.
 	 *
@@ -236,9 +254,9 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function get_links( $folder ) {
+	public function getLinks( $folder ) {
 		$return = [];
-		$data   = $this->get_folder_items( $folder );
+		$data   = $this->getFolderItems( $folder );
 		foreach ( $data['entries'] as $item ) {
 			$array = '';
 			if ( $item['type'] == 'web_link' ) {
@@ -250,7 +268,6 @@ class BoxAPI {
 		return array_filter( $return );
 	}
 
-
 	/**
 	 * Creates a folder.
 	 *
@@ -259,13 +276,12 @@ class BoxAPI {
 	 *
 	 * @return array|mixed|object
 	 */
-	public function create_folder( $name, $parent_id ) {
-		$url    = $this->build_url( "/folders" );
+	public function createFolder( $name, $parent_id ) {
+		$url    = $this->buildUrl( "/folders" );
 		$params = [ 'name' => $name, 'parent' => [ 'id' => $parent_id ] ];
 
 		return json_decode( $this->post( $url, json_encode( $params ) ), true );
 	}
-
 
 	/**
 	 * Modifies the folder details as per the API.
@@ -275,12 +291,11 @@ class BoxAPI {
 	 *
 	 * @return array|mixed|object
 	 */
-	public function update_folder( $folder, array $params ) {
-		$url = $this->build_url( "/folders/$folder" );
+	public function updateFolder( $folder, array $params ) {
+		$url = $this->buildUrl( "/folders/$folder" );
 
 		return json_decode( $this->put( $url, $params ), true );
 	}
-
 
 	/**
 	 * Deletes a folder.
@@ -288,18 +303,17 @@ class BoxAPI {
 	 * @param $folder
 	 * @param array $opts
 	 *
-	 * @return array|mixed|object|string
+	 * @return boolean
 	 */
-	public function delete_folder( $folder, array $opts ) {
-		echo $url = $this->build_url( "/folders/$folder", $opts );
+	public function deleteFolder( $folder, array $opts ) {
+		echo $url = $this->buildUrl( "/folders/$folder", $opts );
 		$return = json_decode( $this->delete( $url ), true );
 		if ( empty( $return ) ) {
-			return 'The folder has been deleted.';
+			return true;
 		} else {
-			return $return;
+			return false;
 		}
 	}
-
 
 	/**
 	 * Shares a folder.
@@ -309,12 +323,11 @@ class BoxAPI {
 	 *
 	 * @return array|mixed|object
 	 */
-	public function share_folder( $folder, array $params ) {
-		$url = $this->build_url( "/folders/$folder" );
+	public function shareFolder( $folder, array $params ) {
+		$url = $this->buildUrl( "/folders/$folder" );
 
 		return json_decode( $this->put( $url, $params ), true );
 	}
-
 
 	/**
 	 * Shares a file.
@@ -324,11 +337,26 @@ class BoxAPI {
 	 *
 	 * @return array|mixed|object
 	 */
-	public function share_file( $file, array $params ) {
-		$url = $this->build_url( "/files/$file" );
+	public function shareFile( $file, array $params ) {
+		$url = $this->buildUrl( "/files/$file" );
 
 		return json_decode( $this->put( $url, $params ), true );
 	}
+
+	/**
+	 * Copy a file.
+	 *
+	 * @param string $file
+	 * @param array $params
+	 * @param string $link
+	 *
+	 * @return array
+	 */
+    public function copyFile( $file, $params, $link ) {
+		$url = $this->buildUrl( "/files/".$file."/copy" );
+
+        return json_decode( $this->post( $url, json_encode( $params ),[ "BoxApi: shared_link=".$link ] ), true );
+    }
 
 	/**
 	 * Get a file.
@@ -337,10 +365,70 @@ class BoxAPI {
 	 *
 	 * @return array|mixed|object
 	 */
-	public function get_file( $file ) {
-		$url = $this->build_url( "/files/$file/content" );
+	public function getFile( $file ) {
+		$url = $this->buildUrl( "/files/$file/content" );
 
 		return $this->getViewer( $url );
+	}
+
+	/**
+	 * Get the file preview link.
+	 *
+	 * @param string $fileId
+	 *
+	 * @return array
+	 */
+	public function getPreviewLink( $fileId ) {
+        $url = $this->buildUrl( '/files/' . $fileId, ['fields' => 'expiring_embed_link'] );
+
+        $result = json_decode( $this->get( $url ), true );
+
+        if ( array_key_exists( 'expiring_embed_link', $result ) && array_key_exists( 'url', $result['expiring_embed_link'] ) ) {
+            return $result['expiring_embed_link']['url'];
+        } else {
+            return '';
+        }
+	}
+
+	/**
+	 * Get the file thumbnail
+	 *
+     * @param $fileId
+     * @param string $extension
+     * @param int $minHeight
+     * @param int $maxHeight
+     * @param int $minWidth
+     * @param int $maxWidth
+	 *
+     * @return mixed
+     */
+    public function getThumbnail( $fileId, $extension = 'png', $minHeight = null, $maxHeight = null, $minWidth = null, $maxWidth = null ) {
+        $urlParams = [];
+        if ( $minHeight !== null ) {
+            $urlParams['min_height'] = $minHeight;
+        }
+
+        if ( $maxHeight !== null ) {
+            $urlParams['max_height'] = $maxHeight;
+        }
+
+        if ( $minWidth !== null ) {
+            $urlParams['min_width'] = $minWidth;
+        }
+
+        if ( $maxWidth !== null ) {
+            $urlParams['max_width'] = $maxWidth;
+        }
+
+        $url = $this->buildUrl( '/files/' . $fileId . '/thumbnail.' . $extension, $urlParams );
+
+        /**
+         * - thumbnail is not yet available -> status code 202 and placeholder in Location-header
+         * - can't generate thumbnail for this file type -> status code 302 and redirection to the placeholder
+         * - thumbnail is available -> status 200
+         */
+
+        return $this->get( $url, true );
 	}
 
 	/**
@@ -351,8 +439,8 @@ class BoxAPI {
 	 *
 	 * @return array|bool|mixed|object|string
 	 */
-	public function get_file_details( $file, $json = false ) {
-		$url = $this->build_url( "/files/$file" );
+	public function getFileDetails( $file, $json = false ) {
+		$url = $this->buildUrl( "/files/$file" );
 		if ( $json ) {
 			return $this->get( $url );
 		} else {
@@ -367,11 +455,11 @@ class BoxAPI {
 	 *
 	 * @return mixed
 	 */
-	public function get_file_content( $file ) {
-		$url = $this->build_url( "/files/$file/content" );
+	public function getFileContent( $file ) {
+		$url = $this->buildUrl( "/files/$file/content" );
 
 		return $this->download( $url );
-	  }
+	}
 
 	/**
 	 * Uploads a file.
@@ -382,9 +470,9 @@ class BoxAPI {
 	 *
 	 * @return array|mixed|object
 	 */
-	public function put_file( $filename, $name, $parent_id ) {
-		$url = $this->build_url( '/files/content', [], $this->upload_url );
-		if ( isset( $name ) ) {
+	public function putFile( $filename, $name = '', $parent_id = '0' ) {
+		$url = $this->buildUrl( '/files/content', [], $this->uploadUrl );
+		if ( !isset( $name ) || empty ($name) ) {
 			$name = basename( $filename );
 		}
 		$file   = new CURLFile( $filename );
@@ -392,12 +480,11 @@ class BoxAPI {
 			'file'         => $file,
 			'name'         => $name,
 			'parent_id'    => $parent_id,
-			'access_token' => $this->access_token
+			'access_token' => $this->accessToken
 		];
 
 		return json_decode( $this->post( $url, $params ), true );
 	}
-
 
 	/**
 	 * Modifies the file details as per the API.
@@ -407,12 +494,11 @@ class BoxAPI {
 	 *
 	 * @return array|mixed|object
 	 */
-	public function update_file( $file, array $params ) {
-		$url = $this->build_url( "/files/$file" );
+	public function updateFile( $file, array $params ) {
+		$url = $this->buildUrl( "/files/$file" );
 
 		return json_decode( $this->put( $url, $params ), true );
 	}
-
 
 	/**
 	 * Deletes a file.
@@ -421,8 +507,8 @@ class BoxAPI {
 	 *
 	 * @return array|mixed|object|string
 	 */
-	public function delete_file( $file ) {
-		$url    = $this->build_url( "/files/$file" );
+	public function deleteFile( $file ) {
+		$url    = $this->buildUrl( "/files/$file" );
 		$return = json_decode( $this->delete( $url ), true );
 		if ( empty( $return ) ) {
 			return 'The file has been deleted.';
@@ -430,7 +516,6 @@ class BoxAPI {
 			return $return;
 		}
 	}
-
 
 	/**
 	 * Saves the token.
@@ -440,7 +525,7 @@ class BoxAPI {
 	 *
 	 * @return bool
 	 */
-	public function write_token( $token, $type = 'file' ) {
+	public function writeToken( $token, $type = 'file' ) {
 		$array = json_decode( $token, true );
 		if ( isset( $array['error'] ) ) {
 			$this->error = $array['error_description'];
@@ -449,7 +534,7 @@ class BoxAPI {
 		} else {
 			$array['timestamp'] = time();
 			if ( $type == 'file' ) {
-				$fp = fopen( $this->get_store_token_file_path(), 'w' );
+				$fp = fopen( $this->getStoreTokenFilePath(), 'w' );
 				fwrite( $fp, json_encode( $array ) );
 				fclose( $fp );
 			}
@@ -457,7 +542,6 @@ class BoxAPI {
 			return true;
 		}
 	}
-
 
 	/**
 	 * Reads the token.
@@ -467,8 +551,8 @@ class BoxAPI {
 	 *
 	 * @return array|bool|mixed|object|string
 	 */
-	public function read_token( $type = 'file', $json = false ) {
-		$store_token_file_name = $this->get_store_token_file_path();
+	public function readToken( $type = 'file', $json = false ) {
+		$store_token_file_name = $this->getStoreTokenFilePath();
 		if ( $type == 'file' && file_exists( $store_token_file_name ) ) {
 			$fp      = fopen( $store_token_file_name, 'r' );
 			$content = fread( $fp, filesize( $store_token_file_name ) );
@@ -483,15 +567,14 @@ class BoxAPI {
 		}
 	}
 
-
 	/**
 	 * Loads the token.
 	 *
 	 * @return bool
 	 */
-	public function load_token() {
+	public function loadToken() {
 		$return = false;
-		$array  = $this->read_token( 'file' );
+		$array  = $this->readToken( 'file' );
 
 		if ( ! $array ) {
 			$return = false;
@@ -501,18 +584,18 @@ class BoxAPI {
 
 				$return = false;
 			} elseif ( $this->expired( $array['expires_in'], $array['timestamp'] ) ) {
-				$this->refresh_token = $array['refresh_token'];
-				$token               = $this->get_token( null, true );
-				if ( $this->write_token( $token, 'file' ) ) {
-					$array               = json_decode( $token, true );
-					$this->refresh_token = $array['refresh_token'];
-					$this->access_token  = $array['access_token'];
+				$this->refreshToken = $array['refresh_token'];
+				$token              = $this->getToken( null, true );
+				if ( $this->writeToken( $token, 'file' ) ) {
+					$array              = json_decode( $token, true );
+					$this->refreshToken = $array['refresh_token'];
+					$this->accessToken  = $array['access_token'];
 
 					$return = true;
 				}
 			} else {
-				$this->refresh_token = $array['refresh_token'];
-				$this->access_token  = $array['access_token'];
+				$this->refreshToken = $array['refresh_token'];
+				$this->accessToken  = $array['access_token'];
 
 				$return = true;
 			}
@@ -528,8 +611,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function get_comments( $file ) {
-		$url = $this->build_url( "/files/$file/comments" );
+	public function getComments( $file ) {
+		$url = $this->buildUrl( "/files/$file/comments" );
 
 		return json_decode( $this->get( $url ), true );
 	}
@@ -541,8 +624,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function get_tasks( $file ) {
-		$url = $this->build_url( "/files/$file/tasks" );
+	public function getTasks( $file ) {
+		$url = $this->buildUrl( "/files/$file/tasks" );
 
 		return json_decode( $this->get( $url ), true );
 	}
@@ -555,8 +638,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function create_user( $login, $name ) {
-		$url = $this->build_url( "/users" );
+	public function createUser( $login, $name ) {
+		$url = $this->buildUrl( "/users" );
 		$params = array( 'login' =>$login, 'name' => $name );
 
 		return json_decode( $this->post( $url, json_encode( $params ) ) , true );
@@ -570,12 +653,12 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function get_user_by_login( $login, $complete = false ) {
+	public function getUserByLogin( $login, $complete = false ) {
 		$fields = '';
 		if( $complete ) {
 			$fields = '&fields=id,name,login,created_at,modified_at,language,space_amount,max_upload_size,status,avatar_url,space_used,can_see_managed_users,is_sync_enabled,is_external_collab_restricted,is_exempt_from_device_limits,is_exempt_from_login_verification';
 		}
-		$url = $this->build_url( "/users" )."&filter_term=$login".$fields;
+		$url = $this->buildUrl( "/users" )."&filter_term=$login".$fields;
 		return json_decode( $this->get( $url ) );
 	}
 
@@ -587,8 +670,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function get_users( $limit = 100, $offset = 0 ){
-		$url = $this->build_url ("/users") ."&limit=$limit&offset=$offset";
+	public function getUsers( $limit = 100, $offset = 0 ){
+		$url = $this->buildUrl ("/users") ."&limit=$limit&offset=$offset";
 		$params = array( 'limit' =>$limit );
 
 		return json_decode( $this->get( $url ) );
@@ -601,8 +684,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function get_user_by_id( $id ) {
-		$url = $this->build_url( "/users/$id" );
+	public function getUserById( $id ) {
+		$url = $this->buildUrl( "/users/$id" );
 		return json_decode( $this->get( $url ),true );
 	}
 
@@ -613,8 +696,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function get_userID_by_login( $user ){
-		$result = $this->get_user_by_login( $user->email );
+	public function getUserIDByLogin( $user ){
+		$result = $this->getUserByLogin( $user->email );
 		if( isset( $result->entries ) ){
 			if( count( $result->entries ) == 1 ){
 				$user->id = $result->entries[0]->id;
@@ -635,8 +718,9 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function get_enterprise_events( $limit=0,$after="2015-06-10T00:00:00-08:00", $before="2015-12-12T10:53:43-08:00", $event='', $stream_position=0 ){
-		$url = $this->build_url ("/events" )."&stream_type=admin_logs&limit=$limit&created_after=$after&created_before=$before&event_type=$event&stream_position=$stream_position";
+	public function getEnterpriseEvents( $limit=0,$after="2015-06-10T00:00:00-08:00", $before="2015-12-12T10:53:43-08:00", $event='', $stream_position=0 ){
+		$url = $this->buildUrl ("/events" )."&stream_type=admin_logs&limit=$limit&created_after=$after&created_before=$before&event_type=$event&stream_position=$stream_position";
+
 		return json_decode( $this->get( $url ) );
 	}
 
@@ -648,8 +732,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function invite_user( $login, $name ){
-		$url = $this->build_url( "/invites" );
+	public function inviteUser( $login, $name ){
+		$url = $this->buildUrl( "/invites" );
 		$params = array( 'login' => $login, 'name' => $name );
 
 		return json_decode( $this->post( $url, json_encode( $params ) ), true );
@@ -660,8 +744,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	private function get_groups() {
-		$url = $this->build_url( "/groups" );
+	private function getGroups() {
+		$url = $this->buildUrl( "/groups" );
 
 		return json_decode( $this->get($url) );
 	}
@@ -673,9 +757,9 @@ class BoxAPI {
 	 *
 	 * @return string
 	 */
-	public function get_group_id( $name ){
+	public function getGroupId( $name ){
 		$group_id = 0;
-		$groups = $this->get_groups();
+		$groups = $this->getGroups();
 		foreach( $groups->entries as $group ) {
 			if( $group->name == $name ) {
 				$group_id = $group->id;
@@ -692,8 +776,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function create_group( $name ) {
-		$url = $this->build_url( "/groups" );
+	public function createGroup( $name ) {
+		$url = $this->buildUrl( "/groups" );
 		$params = array( 'name' => $name ) ;
 		return json_decode( $this->post( $url, json_encode( $params ) ), true );
 	}
@@ -706,8 +790,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function add_user_to_group( $userId, $groupId ) {
-		$url = $this->build_url( "/group_memberships" );
+	public function addUserToGroup( $userId, $groupId ) {
+		$url = $this->buildUrl( "/group_memberships" );
 		$params = array( 'user' => array('id' => $userId), 'group' => array('id' => $groupId) );
 
 		return json_decode( $this->post( $url, json_encode( $params ) ), true );
@@ -721,8 +805,8 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	public function share_folder_with_user( $folderId, $userId ) {
-		$url = $this->build_url( "/collaborations" );
+	public function shareFolderWithUser( $folderId, $userId ) {
+		$url = $this->buildUrl( "/collaborations" );
 		$items = array( 'id' => $folderId, "type" => "folder" );
 		$accessible_by = array( "id" => $userId, "type" => "user" );
 		$params = array( "item" => $items, "accessible_by" => $accessible_by ,"role" => "viewer" );
@@ -739,9 +823,9 @@ class BoxAPI {
 	 *
 	 * @return string
 	 */
-	private function build_url( $api_func, $opts = [], $url = null ) {
-		if (is_null($url)) $url = $this->api_url;
-		$opts = $this->set_opts( $opts );
+	private function buildUrl( $api_func, $opts = [], $url = null ) {
+		if (is_null($url)) $url = $this->apiUrl;
+		$opts = $this->setOptions( $opts );
 		$base = $url . $api_func;
 
 		if ( ! empty( $opts ) ) {
@@ -759,9 +843,9 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-	private function set_opts( array $opts ) {
+	private function setOptions( array $opts ) {
 		if ( ! array_key_exists( 'access_token', $opts ) ) {
-			$opts['access_token'] = $this->access_token;
+			$opts['access_token'] = $this->accessToken;
 		}
 
 		return $opts;
@@ -786,7 +870,7 @@ class BoxAPI {
 
 	/**
 	 * Get status from the code,
-	 * sets self::response_message and self::error_message
+	 * sets self::response_message and self::errorMessage
 	 *
 	 * @param $code
 	 *
@@ -803,18 +887,19 @@ class BoxAPI {
 			502 => "Bad Gateway", 503 => "Service Unavailable", 504 => "Gateway Timeout", 505 => "HTTP Version Not Supported"
 		];
 
-		$this->reponse_status = $code;
-		$this->error_message  = $returnedCode[$code];
+		$this->reponseStatus = $code;
+		$this->errorMessage  = $returnedCode[$code];
 	}
 
 	/**
 	 * Gets an url response.
 	 *
 	 * @param $url
+	 * @param boolean $followRedirects
 	 *
 	 * @return bool|string
 	 */
-	private function get( $url ) {
+	private function get( $url, $followRedirects = false ) {
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
@@ -825,6 +910,11 @@ class BoxAPI {
 			$headers[] = "as-user:".$this->asUser;
 			curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
 		}
+
+		if ($followRedirects) {
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+        }
 
 		$data = curl_exec( $ch );
 		$this->getStatus( curl_getinfo( $ch, CURLINFO_HTTP_CODE ) );
@@ -839,16 +929,19 @@ class BoxAPI {
 	 *
 	 * @param $url
 	 * @param $params
+	 * @param array $headers
 	 *
 	 * @return bool|string
 	 */
-	private static function post( $url, $params ) {
+	private static function post( $url, $params, $headers = [] ) {
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
 		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
 		curl_setopt( $ch, CURLOPT_POST, true );
+		curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
 		curl_setopt( $ch, CURLOPT_POSTFIELDS, $params );
+		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
 		$data = curl_exec( $ch );
 		curl_close( $ch );
 
@@ -936,7 +1029,7 @@ class BoxAPI {
 		foreach ( $headers as $header ) {
 			$matches = [];
 			if ( preg_match( '/^Location:\s+(.*)/i', $header, $matches ) ) {
-				return $this->get( $matches[1]) ;
+				return $this->get( $matches[1] ) ;
 			}
 		}
 		return $data;
@@ -949,8 +1042,25 @@ class BoxAPI {
 	 *
 	 * @return string
 	 */
-	private function get_store_token_file_path( $tmpdir = null ) {
-		if ( is_null ( $tmpdir ) ) $tmpdir = sys_get_temp_dir();
-		return $tmpdir . "/token.box";
+	private function getStoreTokenFilePath() {
+		return $this->getTokenStoragePath() . "/token.box";
+	}
+
+	/**
+	 * Get the value of tokenStoragePath
+	 */
+	public function getTokenStoragePath() {
+		return $this->tokenStoragePath;
+	}
+
+	/**
+	 * Set the value of tokenStoragePath
+	 *
+	 * @return  self
+	 */
+	public function setTokenStoragePath( $tokenStoragePath ) {
+		$this->tokenStoragePath = $tokenStoragePath;
+
+		return $this;
 	}
 }
