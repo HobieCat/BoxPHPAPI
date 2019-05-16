@@ -35,14 +35,21 @@
 		}
 		
 		/* First step for authentication [Gets the code] */
-		public function get_code() {
+		public function get_code($readyKey = false) {
 			if(array_key_exists('refresh_token', $_REQUEST)) {
 				$this->refresh_token = $_REQUEST['refresh_token'];
 			} else {
 				// echo $url = $this->authorize_url . '?' . http_build_query(array('response_type' => 'code', 'client_id' => $this->client_id, 'redirect_uri' => $this->redirect_uri));
-				$url = $this->authorize_url . '?' . http_build_query(array('response_type' => 'code', 'client_id' => $this->client_id, 'redirect_uri' => $this->redirect_uri));
-				header('location: ' . $url);
-				exit();
+                if(!$readyKey)
+                {
+                    echo "Box needs to be authenticated <a href='/Administrative/API/box.php'>Click Here to auth</a>";
+                    //exit();
+                }else{
+                    $url = $this->authorize_url . '?' . http_build_query(array('response_type' => 'code', 'client_id' => $this->client_id, 'redirect_uri' => $this->redirect_uri));
+                    header('location: ' . $url);
+                    exit();
+                }
+
 			}
 		}
 		
@@ -180,7 +187,22 @@
 				return json_decode($this->get($url),true);
 			}
 		}
-		
+
+
+        public function get_folder_items_pool($arrFolder, $json = false) {
+            $arrUrl = array();
+            foreach ($arrFolder as $box)
+            {
+                array_push($arrUrl, array("boxID" => $box['boxID'], "url" => $this->build_url("/folders/".$box['boxID']."/items")));
+            }
+            //$url = $this->build_url("/folders/$folder/items");
+            if($json){
+                return $this->get_pool($arrUrl);
+            } else {
+                return json_decode($this->get_pool($arrUrl),true);
+            }
+        }
+
 		/* Get the list of items in the mentioned folder */
 		public function get_folder_items($folder, $json = false) {
 			$url = $this->build_url("/folders/$folder/items");
@@ -274,6 +296,18 @@
 			$url = $this->build_url("/files/$file");
 			return json_decode($this->put($url, $params), true);
 		}
+
+        /* Get a file */
+        public function get_file($file) {
+            $url = $this->build_url("/files/$file/content");
+
+            return $this->getViewer($url);
+
+            //return json_decode($this->put($url, $params), true);
+        }
+
+
+
 		/* Get the details of the mentioned file */
 		public function get_file_details($file, $json = false) {
 			$url = $this->build_url("/files/$file");
@@ -442,6 +476,49 @@
 			
 			return $data;
 		}
+        
+        private static function get_pool($arrData) {
+            $mh = curl_multi_init();
+            $curly = array();
+            $results = array();
+            foreach ($arrData as $id => $d) {
+                $curly[$id]= curl_init();
+
+                $url = (is_array($d) && !empty($d['url'])) ? $d['url'] : $d;
+                curl_setopt($curly[$id], CURLOPT_URL, $url);
+                curl_setopt($curly[$id], CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($curly[$id], CURLOPT_SSL_VERIFYPEER, false);
+                curl_multi_add_handle($mh, $curly[$id]);
+            }
+
+            $running = null;
+            do {
+                curl_multi_exec($mh, $running);
+            } while($running > 0);
+
+
+            foreach($curly as $id => $c) {
+                $results[$id]['boxID'] = $arrData[$id]['boxID'];
+                $results[$id]['json'] = curl_multi_getcontent($c);
+                curl_multi_remove_handle($mh, $c);
+            }
+
+            //$data = curl_exec($ch);
+            curl_multi_close($mh);
+            return $results;
+        }
+        private static function getViewer($url) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_HEADER, TRUE);
+            $data = http_parse_headers(curl_exec($ch))['Location'];
+
+            curl_close($ch);
+            return $data;
+        }
+
 		
 		private static function post($url, $params) {
 			$ch = curl_init();
