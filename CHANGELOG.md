@@ -1,3 +1,12 @@
+### 2.0.0: may 02th, 2019
+* Bugfixing
+
+### 1.0.9: may 02th, 2019
+* Added to composer
+
+### 1.0.8: may 01th, 2019
+* Updated the code for PHP >5.6
+
 ### 1.0.7: Aug 06th, 2015
 * Upload file function put_file updated as per the changes
 
