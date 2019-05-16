@@ -1,10 +1,14 @@
 {
-    "name": "kiyoto-suzuki/boxphpapi",
-    "type": "API",
-    "description": "Unofficial BoxPHPAPI v2 modified",
+    "name": "HobieCat/BoxPHPAPI",
+    "type": "Library",
+    "description": "PHP API library for box.com",
     "keywords": ["Box","BoxAPI","PHP","API"],
     "homepage": "http://www.ulhas.net/GitHub/BoxPHPAPI/",
-    "license": "Apache License 2.0",
+    "license": "Apache-2.0",
+    "minimum-stability": "dev",
+    "require": {
+        "php": "^5.6|^7.0"
+    },
     "authors": [
         {
             "name": "Ulhas Vardhan Golchha",
@@ -12,12 +16,39 @@
             "role": "Developer"
         },
         {
+            "name": "misterfifi1",
+            "role": "Developer"
+        },
+        {
             "name": "Kiyoto Suzuki",
+            "role": "Developer"
+        },
+        {
+            "name": "Luke Dubber",
+            "role": "Developer"
+        },
+        {
+            "name": "xlthlx",
+            "email": "xlthlx@gmail.com",
+            "role": "Developer"
+        },
+        {
+            "name": "Florian Greinus",
+            "homepage": "https://www.fgrein.us",
+            "role": "Developer"
+        },
+        {
+            "name": "HobieCat",
             "role": "Developer"
         }
     ],
     "support": {
-        "issues": "https://github.com/kiyoto-suzuki/BoxPHPAPI/issues",
-        "source": "https://github.com/kiyoto-suzuki/BoxPHPAPI"
+        "issues": "https://github.com/HobieCat/BoxPHPAPI/issues",
+        "source": "https://github.com/HobieCat/BoxPHPAPI"
+    },
+    "autoload": {
+        "psr-4": {
+            "HobieCat\\PHPBoxAPI\\": "src/"
+        }
     }
 }
