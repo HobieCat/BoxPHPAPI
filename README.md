@@ -1,12 +1,19 @@
-# [PHP API for box.com](https://github.com/xlthlx/phpboxapi)
-
-# [BoxPHPAPI](http://goo.gl/7V1ayp)
+# PHP API library for [box.com](https://www.box.com).
 
 Unofficial BoxPHPAPI v3 based on the API documentations located <a target="_blank" href="https://box-content.readme.io">here</a>.
 
-PHP API library for box.com.
+**THIS REPOSITORY IS BASED ON THE FORKED REPO, AND MERGES ALL CONTRIBUTIONS FROM OTHER GITHUB USERS, AS FOLLOWS:**
 
 Forked from [golchha21/BoxPHPAPI](https://github.com/golchha21/BoxPHPAPI)
+
+Merged contributions from:
+- [misterfifi1](https://github.com/misterfifi1/BoxPHPAPI)
+- [kiyoto-suzuki](https://github.com/kiyoto-suzuki/BoxPHPAPI)
+- [lukedubber](https://github.com/lukedubber/BoxPHPAPI)
+- [xlthlx](https://github.com/xlthlx/phpboxapi)
+- [fgreinus](https://github.com/fgreinus/BoxPHPAPI)
+
+---------------------------------
 
 ## Features
 * Fetches the user details
@@ -24,13 +31,13 @@ Forked from [golchha21/BoxPHPAPI](https://github.com/golchha21/BoxPHPAPI)
 	* Update file details
 	* Delete file
 	* Share file
-	
+
 ## Install
 
 Via Composer
 
 ``` bash
-$ composer require xlthlx/phpboxapi
+$ composer require hobiecat/phpboxapi
 ```
 
 ## Changelog
