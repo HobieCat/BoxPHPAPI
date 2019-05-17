@@ -40,6 +40,16 @@ Via Composer
 $ composer require hobiecat/boxphpapi
 ```
 
+## Using a Box Application Config File and JWT authentication
+
+```php
+// build an istance, it will get its access_token
+$box = BoxAPI::getPreconfiguredInstance($jsonConfigPath);
+
+// use it
+$box->getUser();
+```
+
 ## Changelog
 You can see the changelog <a href="CHANGELOG.md">here</a>.
 
