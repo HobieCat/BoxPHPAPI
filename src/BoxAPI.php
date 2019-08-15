@@ -228,11 +228,29 @@ class BoxAPI {
 	 * @return array|bool|mixed|object|string
 	 */
 	public function getFolderItems( $folder, $json = false ) {
-		$url = $this->buildUrl( "/folders/$folder/items" );
+		$opts = array(
+			// @todo: investigate why marker-based paging does not seem to work.
+			'offset' => 0,
+			// 1000 is the limit for this call.
+			'limit' => 1000,
+		);
+		$url = $this->buildUrl( "/folders/$folder/items", $opts );
+		$result = json_decode( $this->get( $url ), true );
+		$entries = $result['entries'];
+
+		while ( $result['offset'] + $result['limit'] < $result['total_count'] ) {
+			$opts['offset'] += $result['limit'];
+			$url = $this->buildUrl( "/folders/$folder/items", $opts );
+			$result = json_decode( $this->get( $url ), true );
+			$entries = array_merge( $entries, $result['entries'] );
+		}
+
+		$result['entries'] = $entries;
+
 		if ( $json ) {
-			return $this->get( $url );
+			return json_encode( $result );
 		} else {
-			return json_decode( $this->get( $url ), true );
+			return $result;
 		}
 	}
 
