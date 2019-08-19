@@ -1162,3 +1162,4 @@ class BoxAPI {
 		return $this;
 	}
 }
+
