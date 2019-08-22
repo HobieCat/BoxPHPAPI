@@ -548,12 +548,15 @@ class BoxAPI {
 			$name = basename( $filename );
 		}
 		$file   = new CURLFile( $filename );
-		$params = [
-			'file'         => $file,
-			'name'         => $name,
-			'parent_id'    => $parent_id,
-			'access_token' => $this->accessToken
-		];
+    $attributes = json_encode([
+      'name' => $name,
+      'parent' => ['id' => $parent_id],
+    ]);
+    $params = [
+      'attributes' => $attributes,
+      'file'         => $file,
+      'access_token' => $this->accessToken
+    ];
 
 		return json_decode( $this->post( $url, $params ), true );
 	}
