@@ -1081,9 +1081,6 @@ class BoxAPI {
 	 * @return bool|string
 	 */
 	private static function post( $url, $params, $headers = [] ) {
-		if ( is_array( $params ) ) {
-			$params = http_build_query($params);
-		}
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
