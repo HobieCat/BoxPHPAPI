@@ -26,6 +26,42 @@ namespace HobieCat\PHPBoxAPI;
 
 use \Firebase\JWT\JWT;
 
+if (!function_exists('http_parse_headers')) {
+	function http_parse_headers($raw_headers) {
+		$headers = array();
+		$key = '';
+
+		foreach(explode("\n", $raw_headers) as $i => $h) {
+			$h = explode(':', $h, 2);
+
+			if (isset($h[1])) {
+				if (!isset($headers[$h[0]])) {
+					$headers[$h[0]] = trim($h[1]);
+				}
+				elseif (is_array($headers[$h[0]])) {
+					$headers[$h[0]] = array_merge($headers[$h[0]], array(trim($h[1])));
+				}
+				else {
+					$headers[$h[0]] = array_merge(array($headers[$h[0]]), array(trim($h[1])));
+				}
+
+				$key = $h[0];
+			}
+			else {
+				if (substr($h[0], 0, 1) == "\t") {
+					$headers[$key] .= "\r\n\t" . trim($h[0]);
+				}
+				elseif (!$key) {
+					$headers[0] = trim($h[0]);
+					trim($h[0]);
+				}
+			}
+		}
+
+		return $headers;
+	}
+}
+
 class BoxAPI {
 
 	public $clientId 		 = '';
@@ -228,11 +264,29 @@ class BoxAPI {
 	 * @return array|bool|mixed|object|string
 	 */
 	public function getFolderItems( $folder, $json = false ) {
-		$url = $this->buildUrl( "/folders/$folder/items" );
+		$opts = array(
+			// @todo: investigate why marker-based paging does not seem to work.
+			'offset' => 0,
+			// 1000 is the limit for this call.
+			'limit' => 1000,
+		);
+		$url = $this->buildUrl( "/folders/$folder/items", $opts );
+		$result = json_decode( $this->get( $url ), true );
+		$entries = $result['entries'];
+
+		while ( $result['offset'] + $result['limit'] < $result['total_count'] ) {
+			$opts['offset'] += $result['limit'];
+			$url = $this->buildUrl( "/folders/$folder/items", $opts );
+			$result = json_decode( $this->get( $url ), true );
+			$entries = array_merge( $entries, $result['entries'] );
+		}
+
+		$result['entries'] = $entries;
+
 		if ( $json ) {
-			return $this->get( $url );
+			return json_encode( $result );
 		} else {
-			return json_decode( $this->get( $url ), true );
+			return $result;
 		}
 	}
 
@@ -431,6 +485,23 @@ class BoxAPI {
     }
 
 	/**
+	 * Copy a file to the local file system.
+	 *
+	 * This function uses a limited amount of memory and is able to copy large files.
+	 *
+	 * @param $file
+	 * @param $destination
+	 *
+	 * @return mixed
+	 */
+	public function copyToLocal( $file, $destination ) {
+		$url = $this->getFile( $file );
+
+		// copy() does not allocate the whole content in memory.
+		return copy( $url, $destination );
+	}
+
+	/**
 	 * Get a file.
 	 *
 	 * @param  $file
@@ -546,8 +617,8 @@ class BoxAPI {
 		$url = $this->buildUrl( '/files/content', [], $this->uploadUrl );
 		if ( !isset( $name ) || empty ($name) ) {
 			$name = basename( $filename );
-		}
-		$file   = new CURLFile( $filename );
+		}  
+		$file   = new \CURLFile( $filename );
     $attributes = json_encode([
       'name' => $name,
       'parent' => ['id' => $parent_id],
@@ -1013,9 +1084,6 @@ class BoxAPI {
 	 * @return bool|string
 	 */
 	private static function post( $url, $params, $headers = [] ) {
-		if ( is_array( $params ) ) {
-			$params = http_build_query($params);
-		}
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
