@@ -547,7 +547,7 @@ class BoxAPI {
 		if ( !isset( $name ) || empty ($name) ) {
 			$name = basename( $filename );
 		}
-		$file   = new CURLFile( $filename );
+		$file   = new \CURLFile( $filename );
 		$params = [
 			'file'         => $file,
 			'name'         => $name,
