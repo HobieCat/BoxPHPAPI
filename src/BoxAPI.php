@@ -83,6 +83,8 @@ class BoxAPI {
 	private $proxyUser;
 	private $proxyPassword;
 	private $sslVerifyPeers;
+	private $lastCurlError;
+	private $lastCurlErrorNumber;
 
 	private $jsonConfig = null;
 
@@ -298,7 +300,7 @@ class BoxAPI {
 			// 1000 is the limit for this call.
 			'limit' => 1000,
 		);
-		if ($fields) {
+		if (!empty( $fields )) {
 			$opts['fields'] = implode(',', $fields);
 		}
 		$url = $this->buildUrl( "/folders/$folder/items", $opts );
@@ -341,7 +343,7 @@ class BoxAPI {
 	/**
 	 * Get shared items.
 	 *
-	 * @param stirng $link
+	 * @param string $link
 	 *
 	 * @return array
 	 */
@@ -358,6 +360,7 @@ class BoxAPI {
 		$this->setProxyOptions( $ch );
 
 		$data = curl_exec( $ch );
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return json_decode ($data );
@@ -537,6 +540,7 @@ class BoxAPI {
 		// Save directly to file, to avoid loading the whole file into memory.
 		curl_setopt( $ch, CURLOPT_FILE, $fp );
 		$result = curl_exec( $ch );
+		$this->setLastCurlError( $ch );
 		curl_close( $ch ) ;
 		fclose( $fp );
 
@@ -1112,6 +1116,7 @@ class BoxAPI {
 		$data = curl_exec( $ch );
 		$this->getStatus( curl_getinfo( $ch, CURLINFO_HTTP_CODE ) );
 
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return $data;
@@ -1137,6 +1142,7 @@ class BoxAPI {
 		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
 		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return $data;
@@ -1159,6 +1165,7 @@ class BoxAPI {
 		curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $params ) );
 		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return $data;
@@ -1181,6 +1188,7 @@ class BoxAPI {
 		curl_setopt( $ch, CURLOPT_POSTFIELDS, $params );
 		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return $data;
@@ -1201,6 +1209,7 @@ class BoxAPI {
 		curl_setopt( $ch, CURLOPT_HEADER, true );
 		$this->setProxyOptions( $ch );
 		$data = http_parse_headers( curl_exec( $ch ) )['Location'];
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return $data;
@@ -1221,7 +1230,8 @@ class BoxAPI {
 		curl_setopt( $ch, CURLOPT_HEADER, true );
 		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
-		curl_close( $ch) ;
+		$this->setLastCurlError( $ch );
+		curl_close( $ch ) ;
 
 		$headers = explode( "\r\n", $data );
 		foreach ( $headers as $header ) {
@@ -1300,6 +1310,32 @@ class BoxAPI {
 	 */
 	public function setJsonConfig( $config ) {
 		$this->jsonConfig = $config;
+
+		return $this;
+	}
+
+	/**
+	 * Gets the last curl error
+	 *
+	 * @return array
+	 */
+	public function getLastCurlError() {
+		return array (
+			'error' => $this->lastCurlError,
+			'number' => $this->lastCurlErrorNumber,
+		);
+	}
+
+	/**
+	 * Sets the last curl error
+	 *
+	 * @param object $ch
+	 *
+	 * @return self
+	 */
+	public function setLastCurlError( $ch ) {
+		$this->lastCurlError = curl_error( $ch );
+		$this->lastCurlErrorNumber = curl_errno( $ch );
 
 		return $this;
 	}
