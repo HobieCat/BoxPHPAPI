@@ -78,6 +78,13 @@ class BoxAPI {
 	public $reponseStatus    = '';
 	public $tokenStoragePath = './';
 	public $error;
+	private $proxyServer;
+	private $proxyPort;
+	private $proxyUser;
+	private $proxyPassword;
+	private $sslVerifyPeers;
+	private $lastCurlError;
+	private $lastCurlErrorNumber;
 
 	private $jsonConfig = null;
 
@@ -88,13 +95,35 @@ class BoxAPI {
 	 * @param string $client_secret
 	 * @param string $redirect_uri
 	 */
-	public function __construct( $client_id = '', $client_secret = '', $redirect_uri = '' ) {
+	public function __construct( $client_id = '', $client_secret = '', $redirect_uri = '', $ssl_verify_peers = true ) {
 		if ( empty( $client_id ) || empty( $client_secret ) ) {
 			throw new \Exception ( 'Invalid CLIENT_ID or CLIENT_SECRET or REDIRECT_URL. Please provide CLIENT_ID, CLIENT_SECRET and REDIRECT_URL when creating an instance of the class.' );
 		} else {
 			$this->clientId     = $client_id;
 			$this->clientSecret = $client_secret;
 			$this->redirectUri  = $redirect_uri;
+		}
+
+		$this->sslVerifyPeers = $ssl_verify_peers;
+	}
+
+	/**
+	 * Sets the proxy parameters.
+	 *
+	 * @param string $server
+	 * @param string $port
+	 * @param string $auth
+	 */
+	public function setProxy( $server, $port = null, $user = null, $password = null ) {
+		$this->proxyServer = $server;
+		if ($port) {
+			$this->proxyPort = $port;
+		}
+		if ($user) {
+			$this->proxyUser = $user;
+		}
+		if ($password) {
+			$this->proxyPassword = $password;
 		}
 	}
 
@@ -260,16 +289,20 @@ class BoxAPI {
 	 *
 	 * @param $folder
 	 * @param bool $json
+	 * @param array $fields
 	 *
 	 * @return array|bool|mixed|object|string
 	 */
-	public function getFolderItems( $folder, $json = false ) {
+	public function getFolderItems( $folder, $json = false, $fields = array() ) {
 		$opts = array(
 			// @todo: investigate why marker-based paging does not seem to work.
 			'offset' => 0,
 			// 1000 is the limit for this call.
 			'limit' => 1000,
 		);
+		if (!empty( $fields )) {
+			$opts['fields'] = implode(',', $fields);
+		}
 		$url = $this->buildUrl( "/folders/$folder/items", $opts );
 		$result = json_decode( $this->get( $url ), true );
 		$entries = $result['entries'];
@@ -310,26 +343,28 @@ class BoxAPI {
 	/**
 	 * Get shared items.
 	 *
-	 * @param stirng $link
+	 * @param string $link
 	 *
 	 * @return array
 	 */
 	public function getSharedItems( $link ) {
-        $url = $this->buildUrl( '/shared_items' );
+		$url = $this->buildUrl( '/shared_items' );
 
-        $ch = curl_init();
-        curl_setopt( $ch, CURLOPT_URL, $url);
-        curl_setopt( $ch, CURLOPT_HTTPHEADER, [ "BoxApi: shared_link=".$link ] );
-        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
-        curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
-        curl_setopt( $ch, CURLOPT_MAXREDIRS, 3 );
+		$ch = curl_init();
+		curl_setopt( $ch, CURLOPT_URL, $url);
+		curl_setopt( $ch, CURLOPT_HTTPHEADER, [ "BoxApi: shared_link=".$link ] );
+		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
+		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
+		curl_setopt( $ch, CURLOPT_MAXREDIRS, 3 );
+		$this->setProxyOptions( $ch );
 
-        $data = curl_exec( $ch );
-        curl_close( $ch );
+		$data = curl_exec( $ch );
+		$this->setLastCurlError( $ch );
+		curl_close( $ch );
 
-        return json_decode ($data );
-    }
+		return json_decode ($data );
+	}
 
 	/**
 	 * Lists the folders in a folder.
@@ -492,13 +527,24 @@ class BoxAPI {
 	 * @param $file
 	 * @param $destination
 	 *
-	 * @return mixed
+	 * @return bool
 	 */
 	public function copyToLocal( $file, $destination ) {
 		$url = $this->getFile( $file );
 
-		// copy() does not allocate the whole content in memory.
-		return copy( $url, $destination );
+		$ch = curl_init();
+		$fp = fopen( $destination, 'w+' );
+		curl_setopt( $ch, CURLOPT_URL, $url );
+		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
+		$this->setProxyOptions( $ch );
+		// Save directly to file, to avoid loading the whole file into memory.
+		curl_setopt( $ch, CURLOPT_FILE, $fp );
+		$result = curl_exec( $ch );
+		$this->setLastCurlError( $ch );
+		curl_close( $ch ) ;
+		fclose( $fp );
+
+		return $result;
 	}
 
 	/**
@@ -1053,7 +1099,7 @@ class BoxAPI {
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
 
 		if( !empty( $this->asUser ) ) {
 			$headers = [];
@@ -1065,10 +1111,12 @@ class BoxAPI {
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
         }
+		$this->setProxyOptions( $ch );
 
 		$data = curl_exec( $ch );
 		$this->getStatus( curl_getinfo( $ch, CURLINFO_HTTP_CODE ) );
 
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return $data;
@@ -1083,16 +1131,18 @@ class BoxAPI {
 	 *
 	 * @return bool|string
 	 */
-	private static function post( $url, $params, $headers = [] ) {
+	private function post( $url, $params, $headers = [] ) {
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
 		curl_setopt( $ch, CURLOPT_POST, true );
 		curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
 		curl_setopt( $ch, CURLOPT_POSTFIELDS, $params );
 		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
+		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return $data;
@@ -1106,14 +1156,16 @@ class BoxAPI {
 	 *
 	 * @return bool|string
 	 */
-	private static function put( $url, array $params = [] ) {
+	private function put( $url, array $params = [] ) {
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
 		curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, 'PUT' );
 		curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $params ) );
+		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return $data;
@@ -1127,14 +1179,16 @@ class BoxAPI {
 	 *
 	 * @return bool|string
 	 */
-	private static function delete( $url, $params = '' ) {
+	private function delete( $url, $params = '' ) {
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
 		curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, 'DELETE' );
 		curl_setopt( $ch, CURLOPT_POSTFIELDS, $params );
+		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return $data;
@@ -1147,13 +1201,15 @@ class BoxAPI {
 	 *
 	 * @return mixed
 	 */
-	private static function getViewer( $url ) {
+	private function getViewer( $url ) {
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
 		curl_setopt( $ch, CURLOPT_HEADER, true );
+		$this->setProxyOptions( $ch );
 		$data = http_parse_headers( curl_exec( $ch ) )['Location'];
+		$this->setLastCurlError( $ch );
 		curl_close( $ch );
 
 		return $data;
@@ -1170,10 +1226,12 @@ class BoxAPI {
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
 		curl_setopt( $ch, CURLOPT_HEADER, true );
+		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
-		curl_close( $ch) ;
+		$this->setLastCurlError( $ch );
+		curl_close( $ch ) ;
 
 		$headers = explode( "\r\n", $data );
 		foreach ( $headers as $header ) {
@@ -1183,6 +1241,26 @@ class BoxAPI {
 			}
 		}
 		return $data;
+	}
+
+	/**
+	 * Set the proxy parameters for a session. 
+	 *
+	 * @param $ch
+	 */
+	private function setProxyOptions( $ch ) {
+		if ($this->proxyServer) {
+			curl_setopt( $ch, CURLOPT_HTTPPROXYTUNNEL , 1 );
+			curl_setopt( $ch, CURLOPT_PROXY, $this->proxyServer );
+
+			if ($this->proxyPort) {
+				curl_setopt( $ch, CURLOPT_PROXYPORT, $this->proxyPort );
+			}
+
+			if ($this->proxyUser) {
+				curl_setopt( $ch, CURLOPT_PROXYUSERPWD, $this->proxyUser . ':' . $this->proxyPassword );
+			}
+		}
 	}
 
 	/**
@@ -1232,6 +1310,32 @@ class BoxAPI {
 	 */
 	public function setJsonConfig( $config ) {
 		$this->jsonConfig = $config;
+
+		return $this;
+	}
+
+	/**
+	 * Gets the last curl error
+	 *
+	 * @return array
+	 */
+	public function getLastCurlError() {
+		return array (
+			'error' => $this->lastCurlError,
+			'number' => $this->lastCurlErrorNumber,
+		);
+	}
+
+	/**
+	 * Sets the last curl error
+	 *
+	 * @param object $ch
+	 *
+	 * @return self
+	 */
+	public function setLastCurlError( $ch ) {
+		$this->lastCurlError = curl_error( $ch );
+		$this->lastCurlErrorNumber = curl_errno( $ch );
 
 		return $this;
 	}
