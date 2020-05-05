@@ -679,6 +679,31 @@ class BoxAPI {
 	}
 
 	/**
+	 * Uploads a new file revision.
+	 *
+	 * @param $file
+	 * @param $filename
+	 * @param $new_name
+	 *
+	 * @return array|mixed|object
+	 */
+	public function putFileVersion( $file, $filename, $new_name = null ) {
+		$url = $this->buildUrl( "/files/$file/content", [], $this->uploadUrl );
+		$file   = new \CURLFile( $filename );
+		$attributes = [];
+		if ($new_name) {
+			$attributes['name'] = $new_name;
+		}
+		$params = [
+			'attributes'   => json_encode($attributes),
+			'file'         => $file,
+			'access_token' => $this->accessToken
+		];
+
+		return json_decode( $this->post( $url, $params ), true );
+  }
+
+	/**
 	 * Modifies the file details as per the API.
 	 *
 	 * @param $file
