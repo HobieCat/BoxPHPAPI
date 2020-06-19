@@ -145,7 +145,7 @@ class BoxAPI {
 				// instantiate the object to be returned
 				$return = new self( $config->boxAppSettings->clientID, $config->boxAppSettings->clientSecret );
 				$return->setJsonConfig($config)->setTokenStoragePath($tokenStoragePath)
-					   ->tokenUrl='https://api.box.com/oauth2/token';
+						 ->tokenUrl='https://api.box.com/oauth2/token';
 
 				// try to get a token in json format
 				$token = $return->getToken( null, true );
@@ -663,7 +663,7 @@ class BoxAPI {
 		$url = $this->buildUrl( '/files/content', [], $this->uploadUrl );
 		if ( !isset( $name ) || empty ($name) ) {
 			$name = basename( $filename );
-		}  
+		}
 		$file   = new \CURLFile( $filename );
     $attributes = json_encode([
       'name' => $name,
@@ -1036,6 +1036,171 @@ class BoxAPI {
 	}
 
 	/**
+	 * Set the file metadata on Box.
+	 *
+	 * @param string $file
+	 *   The file.
+	 * @param array $metadata
+	 *   The metadata keyed array.
+	 * @param string $template
+	 *   The metadata template.
+	 * @param string $scope
+	 *   The metadata scope.
+	 *
+	 * @return array
+	 *   All metadata on the file.
+	 */
+	public function setFileMetadata($file, array $metadata, $template = 'properties', $scope = 'global') {
+		// Get existing metadata on the file so that we know what needs to be
+		// set and what needs to be updated.
+		$response = $this->getFileMetadata($file, $template, $scope);
+		if (!isset($response['entities'])) {
+			return $response;
+		}
+
+		// Build the base URL.
+		$url = $this->buildUrl("/files/$file/metadata/$scope/$template");
+
+		// Set or update the metadata.
+		$existing_metadata = $response['entities'];
+		if ($existing_metadata) {
+			$response = $this->updateFileMetadata($url, $metadata, $existing_metadata);
+			if ($response === NULL) {
+				// If we didn't send a request, because there is nothing to change,
+				// then fake the response.
+				$response = $existing_metadata + [
+					'$type' => $template,
+					'$scope' => $scope,
+				];
+			}
+		}
+		else {
+			$response = $this->putFileMetadata($url, $metadata);
+		}
+
+		// Return the response if the request was unsuccessful or the response
+		// metadata if the request was successful.
+		if (!$this->validMetadataResponse($response, $template, $scope)) {
+			return $response;
+		}
+		return ['entities' => $this->getResponseMetadata($response)];
+	}
+
+	/**
+	 * Put the file metadata.
+	 *
+	 * This tries to create a new metadata instance for the file & template
+	 * encoded by the endpoint URL.
+	 *
+	 * @param string $url
+	 *   The API URL endpoint.
+	 * @param array $metadata
+	 *   The metadata keyed array.
+	 *
+	 * @return array
+	 *   JSON decoded response.
+	 */
+	protected function putFileMetadata($url, array $metadata) {
+		return json_decode($this->post($url, json_encode($metadata), [
+			'Content-type: application/json',
+		]), TRUE);
+	}
+
+	/**
+	 * Update the file metadata.
+	 *
+	 * This tries to update a metadata instance for the file & template
+	 * encoded by the endpoint URL.
+	 *
+	 * @param string $url
+	 *   The API URL endpoint.
+	 * @param array $metadata
+	 *   The metadata keyed array.
+	 *
+	 * @return array|null
+	 *   JSON decoded response, or NULL if nothing needed to be updated.
+	 */
+	protected function updateFileMetadata($url, array $metadata, array $existing_metadata) {
+		$params = [];
+		foreach ($metadata as $key => $value) {
+			if ((!isset($existing_metadata[$key]) && $value) || $existing_metadata[$key] != $value || (isset($existing_metadata[$key]) && !$value)) {
+				$params[] = [
+					'op' => $value ? (isset($existing_metadata[$key]) ? 'replace' : 'add') : 'remove',
+					'path' => "/$key",
+					'value' => $value,
+				];
+			}
+		}
+		return $params ? json_decode($this->put($url, $params, [
+			'Content-type: application/json-patch+json',
+		]), TRUE) : NULL;
+	}
+
+	/**
+	 * Get the file metadata on Box.
+	 *
+	 * @param string $file
+	 *   The file.
+	 * @param string $template
+	 *   The metadata template.
+	 * @param string $scope
+	 *   The metadata scope.
+	 *
+	 * @return array
+	 *   Keyed array of metadata.
+	 */
+	public function getFileMetadata($file, $template = 'properties', $scope = 'global') {
+		// Get the metadata from Box.
+		$url = $this->buildUrl("/files/$file/metadata/$scope/$template");
+		$response = json_decode($this->get($url), TRUE);
+
+		// If the file has no metadata yet, return an empty array of entities.
+		if (isset($response['code']) && $response['code'] == 'instance_not_found') {
+			return ['entities' => []];
+		}
+
+		// If the response is invalid, return it.
+		if (!$this->validMetadataResponse($response, $template, $scope)) {
+			return $response;
+		}
+
+		// The response is valid, return the metadata as 'entities'.
+		return ['entities' => $this->getResponseMetadata($response)];
+	}
+
+	/**
+	 * Checks if the metadata response is valid.
+	 *
+	 * @param array $response
+	 *   The API response.
+	 * @param string $template
+	 *   The metadata template.
+	 * @param string $scope
+	 *   The metadata scope.
+	 *
+	 * @return bool
+	 *   TRUE of the response is valid.
+	 */
+	protected function validMetadataResponse($response, $template, $scope) {
+		return isset($response['$type']) && $response['$type'] == $template && isset($response['$scope']) && $response['$scope'] == $scope;
+	}
+
+	/**
+	 * Gets the metadata variables from the API response.
+	 *
+	 * @param array $response
+	 *   The API response.
+	 *
+	 * @return array
+	 *   Metadata from the API resonse.
+	 */
+	protected function getResponseMetadata($response) {
+		return array_filter($response, function ($key) {
+				return $key[0] != '$';
+		}, ARRAY_FILTER_USE_KEY);
+	}
+
+	/**
 	 * Builds the URL for the call.
 	 *
 	 * @param $api_func
@@ -1178,14 +1343,16 @@ class BoxAPI {
 	 *
 	 * @param $url
 	 * @param array $params
+	 * @param array $headers
 	 *
 	 * @return bool|string
 	 */
-	private function put( $url, array $params = [] ) {
+	private function put( $url, $params, $headers = [] ) {
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
 		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
+		curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
 		curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, 'PUT' );
 		curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $params ) );
 		$this->setProxyOptions( $ch );
