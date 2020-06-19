@@ -85,6 +85,7 @@ class BoxAPI {
 	private $sslVerifyPeers;
 	private $lastCurlError;
 	private $lastCurlErrorNumber;
+	private $throwExceptions;
 
 	private $jsonConfig = null;
 
@@ -94,8 +95,10 @@ class BoxAPI {
 	 * @param string $client_id
 	 * @param string $client_secret
 	 * @param string $redirect_uri
+	 * @param boolean $ssl_verify_peers
+	 * @param boolean $throw_exceptions
 	 */
-	public function __construct( $client_id = '', $client_secret = '', $redirect_uri = '', $ssl_verify_peers = true ) {
+	public function __construct( $client_id = '', $client_secret = '', $redirect_uri = '', $ssl_verify_peers = true, $throw_exceptions = false ) {
 		if ( empty( $client_id ) || empty( $client_secret ) ) {
 			throw new \Exception ( 'Invalid CLIENT_ID or CLIENT_SECRET or REDIRECT_URL. Please provide CLIENT_ID, CLIENT_SECRET and REDIRECT_URL when creating an instance of the class.' );
 		} else {
@@ -105,6 +108,7 @@ class BoxAPI {
 		}
 
 		$this->sslVerifyPeers = $ssl_verify_peers;
+		$this->throwExceptions = $throw_exceptions;
 	}
 
 	/**
@@ -168,9 +172,9 @@ class BoxAPI {
 	 * @return array
 	 */
 	private function buildJWT() {
-            // decrypt private key
-            $private_key = $this->getJsonConfig()->boxAppSettings->appAuth->privateKey;
-            $passphrase =  $this->getJsonConfig()->boxAppSettings->appAuth->passphrase;
+			// decrypt private key
+			$private_key = $this->getJsonConfig()->boxAppSettings->appAuth->privateKey;
+			$passphrase =  $this->getJsonConfig()->boxAppSettings->appAuth->passphrase;
 			$key = openssl_pkey_get_private($private_key, $passphrase);
 
 			$claims = [
@@ -183,9 +187,9 @@ class BoxAPI {
 				// We give the assertion a lifetime of 45 seconds before it expires
 				'exp' => time() + 45,
 				'kid' => $this->getJsonConfig()->boxAppSettings->appAuth->publicKeyID
-			  ];
+				];
 
-			  return JWT::encode($claims, $key, 'RS512');
+				return JWT::encode($claims, $key, 'RS512');
 	}
 
 	/**
@@ -348,22 +352,11 @@ class BoxAPI {
 	 * @return array
 	 */
 	public function getSharedItems( $link ) {
-		$url = $this->buildUrl( '/shared_items' );
-
-		$ch = curl_init();
-		curl_setopt( $ch, CURLOPT_URL, $url);
-		curl_setopt( $ch, CURLOPT_HTTPHEADER, [ "BoxApi: shared_link=".$link ] );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
-		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
-		curl_setopt( $ch, CURLOPT_MAXREDIRS, 3 );
-		$this->setProxyOptions( $ch );
-
-		$data = curl_exec( $ch );
-		$this->setLastCurlError( $ch );
-		curl_close( $ch );
-
-		return json_decode ($data );
+		return json_decode($this->get(
+			$this->buildUrl( '/shared_items' ),
+			true,
+			[ "BoxApi: shared_link=$link" ]
+		));
 	}
 
 	/**
@@ -513,11 +506,10 @@ class BoxAPI {
 	 *
 	 * @return array
 	 */
-    public function copyFile( $file, $params, $link ) {
-		$url = $this->buildUrl( "/files/".$file."/copy" );
-
-        return json_decode( $this->post( $url, json_encode( $params ),[ "BoxApi: shared_link=".$link ] ), true );
-    }
+		public function copyFile( $file, $params, $link ) {
+			$url = $this->buildUrl( "/files/".$file."/copy" );
+			return json_decode( $this->post( $url, json_encode( $params ),[ "BoxApi: shared_link=".$link ] ), true );
+		}
 
 	/**
 	 * Copy a file to the local file system.
@@ -568,56 +560,55 @@ class BoxAPI {
 	 * @return array
 	 */
 	public function getPreviewLink( $fileId ) {
-        $url = $this->buildUrl( '/files/' . $fileId, ['fields' => 'expiring_embed_link'] );
+		$url = $this->buildUrl( '/files/' . $fileId, ['fields' => 'expiring_embed_link'] );
+		$result = json_decode( $this->get( $url ), true );
 
-        $result = json_decode( $this->get( $url ), true );
-
-        if ( array_key_exists( 'expiring_embed_link', $result ) && array_key_exists( 'url', $result['expiring_embed_link'] ) ) {
-            return $result['expiring_embed_link']['url'];
-        } else {
-            return '';
-        }
+		if ( array_key_exists( 'expiring_embed_link', $result ) && array_key_exists( 'url', $result['expiring_embed_link'] ) ) {
+			return $result['expiring_embed_link']['url'];
+		} else {
+			return '';
+		}
 	}
 
 	/**
 	 * Get the file thumbnail
 	 *
-     * @param $fileId
-     * @param string $extension
-     * @param int $minHeight
-     * @param int $maxHeight
-     * @param int $minWidth
-     * @param int $maxWidth
+	 * @param $fileId
+	 * @param string $extension
+	 * @param int $minHeight
+	 * @param int $maxHeight
+	 * @param int $minWidth
+	 * @param int $maxWidth
 	 *
-     * @return mixed
-     */
-    public function getThumbnail( $fileId, $extension = 'png', $minHeight = null, $maxHeight = null, $minWidth = null, $maxWidth = null ) {
-        $urlParams = [];
-        if ( $minHeight !== null ) {
-            $urlParams['min_height'] = $minHeight;
-        }
+	 * @return mixed
+	 */
+	public function getThumbnail( $fileId, $extension = 'png', $minHeight = null, $maxHeight = null, $minWidth = null, $maxWidth = null ) {
+		$urlParams = [];
+		if ( $minHeight !== null ) {
+			$urlParams['min_height'] = $minHeight;
+		}
 
-        if ( $maxHeight !== null ) {
-            $urlParams['max_height'] = $maxHeight;
-        }
+		if ( $maxHeight !== null ) {
+			$urlParams['max_height'] = $maxHeight;
+		}
 
-        if ( $minWidth !== null ) {
-            $urlParams['min_width'] = $minWidth;
-        }
+		if ( $minWidth !== null ) {
+			$urlParams['min_width'] = $minWidth;
+		}
 
-        if ( $maxWidth !== null ) {
-            $urlParams['max_width'] = $maxWidth;
-        }
+		if ( $maxWidth !== null ) {
+			$urlParams['max_width'] = $maxWidth;
+		}
 
-        $url = $this->buildUrl( '/files/' . $fileId . '/thumbnail.' . $extension, $urlParams );
+		$url = $this->buildUrl( '/files/' . $fileId . '/thumbnail.' . $extension, $urlParams );
 
-        /**
-         * - thumbnail is not yet available -> status code 202 and placeholder in Location-header
-         * - can't generate thumbnail for this file type -> status code 302 and redirection to the placeholder
-         * - thumbnail is available -> status 200
-         */
+		/**
+		 * - thumbnail is not yet available -> status code 202 and placeholder in Location-header
+		 * - can't generate thumbnail for this file type -> status code 302 and redirection to the placeholder
+		 * - thumbnail is available -> status 200
+		 */
 
-        return $this->get( $url, true );
+		return $this->get( $url, true );
 	}
 
 	/**
@@ -665,15 +656,15 @@ class BoxAPI {
 			$name = basename( $filename );
 		}
 		$file   = new \CURLFile( $filename );
-    $attributes = json_encode([
-      'name' => $name,
-      'parent' => ['id' => $parent_id],
-    ]);
-    $params = [
-      'attributes' => $attributes,
-      'file'         => $file,
-      'access_token' => $this->accessToken
-    ];
+		$attributes = json_encode([
+			'name' => $name,
+			'parent' => ['id' => $parent_id],
+		]);
+		$params = [
+			'attributes' => $attributes,
+			'file'         => $file,
+			'access_token' => $this->accessToken
+		];
 
 		return json_decode( $this->post( $url, $params ), true );
 	}
@@ -701,7 +692,7 @@ class BoxAPI {
 		];
 
 		return json_decode( $this->post( $url, $params ), true );
-  }
+	}
 
 	/**
 	 * Modifies the file details as per the API.
@@ -1255,15 +1246,17 @@ class BoxAPI {
 	}
 
 	/**
-	 * Get status from the code,
-	 * sets self::response_message and self::errorMessage
+	 * Sets request status from the code.
+	 *
+	 * Sets self::response_message and self::errorMessage.
 	 *
 	 * @param $code
 	 *
 	 * @return void
 	 */
-	private function getStatus( $code ) {
+	private function setStatus( $code ) {
 		$returnedCode = [
+			0 => "Connection failed",
 			100 => "Continue", 101 => "Switching Protocols", 200 => "OK", 201 => "Created", 202 => "Accepted", 203 => "Non-Authoritative Information",
 			204 => "No Content", 205 => "Reset Content", 206 => "Partial Content", 300 => "Multiple Choices", 301 => "Moved Permanently", 302 => "Found", 303 => "See Other",
 			304 => "Not Modified", 305 => "Use Proxy", 306 => "(Unused)", 307 => "Temporary Redirect", 400 => "Bad Request", 401 => "Unauthorized", 402 => "Payment Required",
@@ -1282,32 +1275,35 @@ class BoxAPI {
 	 *
 	 * @param $url
 	 * @param boolean $followRedirects
+	 * @param array $headers
+	 * @param boolean $includeResponseHeaders
 	 *
 	 * @return bool|string
 	 */
-	private function get( $url, $followRedirects = false ) {
+	private function get( $url, $followRedirects = false, $headers = [], $includeResponseHeaders = false ) {
 		$ch = curl_init();
 		curl_setopt( $ch, CURLOPT_URL, $url );
 		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
 		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
+		curl_setopt( $ch, CURLOPT_HEADER, $includeResponseHeaders);
 
 		if( !empty( $this->asUser ) ) {
-			$headers = [];
 			$headers[] = "as-user:".$this->asUser;
 			curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
 		}
 
 		if ($followRedirects) {
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
-        }
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+			curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+		}
 		$this->setProxyOptions( $ch );
 
 		$data = curl_exec( $ch );
-		$this->getStatus( curl_getinfo( $ch, CURLINFO_HTTP_CODE ) );
-
+		$this->setStatus( curl_getinfo( $ch, CURLINFO_HTTP_CODE ) );
 		$this->setLastCurlError( $ch );
 		curl_close( $ch );
+
+		$this->handleException($data, 'GET', $url, $headers);
 
 		return $data;
 	}
@@ -1332,8 +1328,11 @@ class BoxAPI {
 		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
 		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
+		$this->setStatus( curl_getinfo( $ch, CURLINFO_HTTP_CODE ) );
 		$this->setLastCurlError( $ch );
 		curl_close( $ch );
+
+		$this->handleException($data, 'POST', $url, $headers);
 
 		return $data;
 	}
@@ -1357,8 +1356,11 @@ class BoxAPI {
 		curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $params ) );
 		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
+		$this->setStatus( curl_getinfo( $ch, CURLINFO_HTTP_CODE ) );
 		$this->setLastCurlError( $ch );
 		curl_close( $ch );
+
+		$this->handleException($data, 'PUT', $url, $headers);
 
 		return $data;
 	}
@@ -1380,8 +1382,11 @@ class BoxAPI {
 		curl_setopt( $ch, CURLOPT_POSTFIELDS, $params );
 		$this->setProxyOptions( $ch );
 		$data = curl_exec( $ch );
+		$this->setStatus( curl_getinfo( $ch, CURLINFO_HTTP_CODE ) );
 		$this->setLastCurlError( $ch );
 		curl_close( $ch );
+
+		$this->handleException($data, 'DELETE', $url);
 
 		return $data;
 	}
@@ -1394,17 +1399,8 @@ class BoxAPI {
 	 * @return mixed
 	 */
 	private function getViewer( $url ) {
-		$ch = curl_init();
-		curl_setopt( $ch, CURLOPT_URL, $url );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
-		curl_setopt( $ch, CURLOPT_HEADER, true );
-		$this->setProxyOptions( $ch );
-		$data = http_parse_headers( curl_exec( $ch ) )['Location'];
-		$this->setLastCurlError( $ch );
-		curl_close( $ch );
-
-		return $data;
+		$response = $this->get( $url,true, [], true );
+		return http_parse_headers( $response )['Location'];
 	}
 
 	/**
@@ -1415,28 +1411,18 @@ class BoxAPI {
 	 * @return mixed
 	 */
 	private function download( $url ) {
-		$ch = curl_init();
-		curl_setopt( $ch, CURLOPT_URL, $url );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyPeers );
-		curl_setopt( $ch, CURLOPT_HEADER, true );
-		$this->setProxyOptions( $ch );
-		$data = curl_exec( $ch );
-		$this->setLastCurlError( $ch );
-		curl_close( $ch ) ;
+		$data = $this->get( $url,true, [], true );
+		$headers = http_parse_headers( $response );
 
-		$headers = explode( "\r\n", $data );
-		foreach ( $headers as $header ) {
-			$matches = [];
-			if ( preg_match( '/^Location:\s+(.*)/i', $header, $matches ) ) {
-				return $this->get( $matches[1] ) ;
-			}
+		if (!empty($headers['Location'])) {
+			return $headers['Location'];
 		}
+
 		return $data;
 	}
 
 	/**
-	 * Set the proxy parameters for a session. 
+	 * Set the proxy parameters for a session.
 	 *
 	 * @param $ch
 	 */
@@ -1531,4 +1517,27 @@ class BoxAPI {
 
 		return $this;
 	}
+
+	/**
+	 * Optionally handles an exception.
+	 *
+	 * @param string $data
+	 *
+	 * @throws BoxRequestException
+	 */
+	private function handleException( $data, $method, $url, $headers = [] ) {
+		if ($this->throwExceptions && ($this->reponseStatus < 200 || $this->reponseStatus >= 300)) {
+			throw new BoxRequestException(
+				$this->errorMessage,
+					$this->reponseStatus,
+					$data,
+					$this->lastCurlError,
+					$this->lastCurlErrorNumber,
+					$method,
+					$url,
+					$headers
+				);
+			}
+	}
+
 }
