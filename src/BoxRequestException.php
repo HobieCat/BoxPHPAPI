@@ -38,9 +38,9 @@ class BoxRequestException extends \Exception {
 	 * BoxRequestException constructor.
 	 * @param string $message
 	 * @param int $code
-	 * @param Throwable|NULL $previous
+	 * @param \Throwable|NULL $previous
 	 */
-	public function __construct($message, $code, $responseData, $curlError = '', $curlErrorCode = 0, $requestMethod = '', $requestUrl = '', $requestHeaders = [], Throwable $previous = null) {
+	public function __construct($message, $code, $responseData, $curlError = '', $curlErrorCode = 0, $requestMethod = '', $requestUrl = '', $requestHeaders = [], ?\Throwable $previous = null) {
 		parent::__construct($message, $code, $previous);
 		$this->responseData = $responseData;
 		$this->curlError = $curlError;
@@ -75,21 +75,21 @@ class BoxRequestException extends \Exception {
 	 * @return string
 	 */
 	public function getRequestMethod() {
-		$this->requestMethod;
+		return $this->requestMethod;
 	}
 
 	/**
 	 * @return string
 	 */
 	public function getRequestUrl() {
-		$this->requestUrl;
+		return $this->requestUrl;
 	}
 
 	/**
 	 * @return int
 	 */
 	public function getRequestHeaders() {
-		$this->requestHeaders;
+		return $this->requestHeaders;
 	}
 
 }
