@@ -1400,7 +1400,7 @@ class BoxAPI {
 	 */
 	private function getViewer( $url ) {
 		$response = $this->get( $url,true, [], true );
-		return http_parse_headers( $response )['Location'];
+		return http_parse_headers( $response )['location'];
 	}
 
 	/**
@@ -1412,10 +1412,10 @@ class BoxAPI {
 	 */
 	private function download( $url ) {
 		$data = $this->get( $url,true, [], true );
-		$headers = http_parse_headers( $response );
+		$headers = http_parse_headers( $data );
 
-		if (!empty($headers['Location'])) {
-			return $headers['Location'];
+		if (!empty($headers['location'])) {
+			return $headers['location'];
 		}
 
 		return $data;
